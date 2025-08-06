@@ -1,0 +1,18 @@
+{
+  "alcoholic_ingredients": [
+    "vodka",
+    "white_rum",
+    "white_wine",
+    "orange_liqueur"
+  ],
+  "non_alcoholic_ingredients": [
+    "lemon_juice",
+    "elderflower_syrup",
+    "passion_fruit_juice",
+    "soda"
+  ],
+  "external_ingredients": [
+    "tonic_water",
+    "coca_cola"
+  ]
+}

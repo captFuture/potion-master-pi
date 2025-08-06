@@ -1,0 +1,82 @@
+{
+  "white_wine_spritz": {
+    "de": "Weißwein Spritz",
+    "en": "White Wine Spritz",
+    "hogwarts": "Hufflepuff Fizz"
+  },
+  "hugo_white_wine": {
+    "de": "Hugo Weißwein",
+    "en": "Hugo with White Wine",
+    "hogwarts": "Elixir of Elders"
+  },
+  "tropical_wine_fizz": {
+    "de": "Tropical Wine Fizz",
+    "en": "Tropical Wine Fizz",
+    "hogwarts": "Forbidden Forest Bubbles"
+  },
+  "vodka_passion_fizz": {
+    "de": "Vodka Passion Fizz",
+    "en": "Vodka Passion Fizz",
+    "hogwarts": "Phoenix Tears"
+  },
+  "rum_hugo": {
+    "de": "Rum Hugo",
+    "en": "Hugo with Rum",
+    "hogwarts": "Sirius Splash"
+  },
+  "blossom_spritz": {
+    "de": "Blossom Spritz",
+    "en": "Blossom Spritz",
+    "hogwarts": "Petal Potion"
+  },
+  "passion_mocktail": {
+    "de": "Passion Mocktail",
+    "en": "Passion Mocktail",
+    "hogwarts": "Gillywater Bloom"
+  },
+  "elderflower_lemon_fizz": {
+    "de": "Holunder-Zitrone Fizz",
+    "en": "Elderflower Lemon Fizz",
+    "hogwarts": "Floo Flame"
+  },
+  "skinny_bitch": {
+    "de": "Skinny Bitch",
+    "en": "Skinny Bitch",
+    "hogwarts": "Slim Snitch"
+  },
+  "vodka_tonic_lite": {
+    "de": "Vodka Tonic Light",
+    "en": "Vodka Tonic Light",
+    "hogwarts": "Wand Polish"
+  },
+  "rum_and_cola": {
+    "de": "Rum & Cola",
+    "en": "Rum & Cola",
+    "hogwarts": "Knight Bus Fuel"
+  },
+  "tonic_blossom": {
+    "de": "Tonic Blossom",
+    "en": "Tonic Blossom",
+    "hogwarts": "Luna's Garden"
+  },
+  "passion_rum_cola": {
+    "de": "Maracuja Rum & Cola",
+    "en": "Passion Rum & Cola",
+    "hogwarts": "Whomping Willow Twist"
+  },
+  "citrus_vodka_tonic": {
+    "de": "Zitrus Vodka Tonic",
+    "en": "Citrus Vodka Tonic",
+    "hogwarts": "Patronus Pop"
+  },
+  "white_wine_cola_fusion": {
+    "de": "Weißwein-Cola Fusion",
+    "en": "White Wine Cola Fusion",
+    "hogwarts": "Draught of Curiosity"
+  },
+  "blossom_bitter_tonic": {
+    "de": "Blossom Bitter Tonic",
+    "en": "Blossom Bitter Tonic",
+    "hogwarts": "Mermaid Mischief"
+  }
+}

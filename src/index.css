@@ -2,41 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Cocktail Machine Design System - Modern, sophisticated touchscreen interface */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core background and surfaces */
+    --background: 220 15% 5%;
+    --surface: 220 15% 8%;
+    --surface-elevated: 220 15% 12%;
+    --foreground: 220 15% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Card system */
+    --card: 220 15% 8%;
+    --card-foreground: 220 15% 95%;
+    --card-border: 220 25% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    /* Interactive elements */
+    --popover: 220 15% 10%;
+    --popover-foreground: 220 15% 95%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand colors - Cocktail machine aesthetic */
+    --primary: 195 85% 55%;
+    --primary-glow: 195 85% 65%;
+    --primary-foreground: 220 15% 5%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 280 50% 60%;
+    --secondary-glow: 280 50% 70%;
+    --secondary-foreground: 220 15% 95%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Status colors */
+    --success: 142 76% 36%;
+    --success-foreground: 220 15% 95%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 220 15% 5%;
+    
+    --error: 0 84% 60%;
+    --error-foreground: 220 15% 95%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Muted elements */
+    --muted: 220 15% 15%;
+    --muted-foreground: 220 15% 65%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 220 15% 18%;
+    --accent-foreground: 220 15% 85%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 220 15% 95%;
 
-    --radius: 0.5rem;
+    --border: 220 25% 20%;
+    --input: 220 15% 15%;
+    --ring: 195 85% 55%;
+
+    --radius: 1rem;
+
+    /* Gradients for cocktail machine aesthetics */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--secondary-glow)));
+    --gradient-surface: linear-gradient(145deg, hsl(var(--surface)) 0%, hsl(var(--surface-elevated)) 100%);
+    
+    /* Shadows and glows */
+    --shadow-glow: 0 0 30px hsl(var(--primary) / 0.3);
+    --shadow-card: 0 4px 20px hsl(220 25% 0% / 0.5);
+    --shadow-button: 0 2px 10px hsl(var(--primary) / 0.4);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --sidebar-background: 0 0% 98%;
 

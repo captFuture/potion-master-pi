@@ -1,0 +1,52 @@
+{
+  "vodka": {
+    "de": "Wodka",
+    "en": "Vodka",
+    "hogwarts": "Essenz des Nordens"
+  },
+  "white_rum": {
+    "de": "Weißer Rum",
+    "en": "White Rum",
+    "hogwarts": "Karibischer Schatten"
+  },
+  "white_wine": {
+    "de": "Weißwein",
+    "en": "White Wine",
+    "hogwarts": "Schneeweiser Kelch"
+  },
+  "orange_liqueur": {
+    "de": "Orangenlikör",
+    "en": "Orange Liqueur",
+    "hogwarts": "Mandarix-Tropfen"
+  },
+  "lemon_juice": {
+    "de": "Zitronensaft",
+    "en": "Lemon Juice",
+    "hogwarts": "Säure der Alraune"
+  },
+  "elderflower_syrup": {
+    "de": "Holunderblütensirup",
+    "en": "Elderflower Syrup",
+    "hogwarts": "Sirup des Verbotenen Waldes"
+  },
+  "passion_fruit_juice": {
+    "de": "Maracujasaft",
+    "en": "Passion Fruit Juice",
+    "hogwarts": "Drachenherz-Saft"
+  },
+  "soda": {
+    "de": "Sodawasser",
+    "en": "Soda Water",
+    "hogwarts": "Lufttrank"
+  },
+  "tonic_water": {
+    "de": "Tonic Water",
+    "en": "Tonic Water",
+    "hogwarts": "Mondlicht-Bitter"
+  },
+  "coca_cola": {
+    "de": "Cola",
+    "en": "Cola",
+    "hogwarts": "Dunkeltrank"
+  }
+}
