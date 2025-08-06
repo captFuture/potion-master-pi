@@ -15,9 +15,10 @@ const buttonVariants = cva(
         secondary: "bg-gradient-secondary text-secondary-foreground hover:shadow-button hover:scale-105 active:scale-95",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        cocktail: "bg-gradient-surface border-2 border-card-border text-foreground hover:border-primary hover:shadow-glow hover:scale-105 active:scale-95 backdrop-blur-sm",
+        cocktail: "bg-gradient-surface border-2 border-card-border text-foreground hover:border-primary hover:shadow-glow hover:scale-105 active:scale-95 backdrop-blur-sm data-[theme=hogwarts]:hover:shadow-button data-[theme=hogwarts]:border-warning",
         serving: "bg-warning text-warning-foreground animate-pulse-glow hover:bg-warning/90",
         success: "bg-success text-success-foreground hover:bg-success/90 hover:shadow-lg",
+        magical: "bg-gradient-primary border-2 border-warning text-primary-foreground hover:shadow-button hover:scale-105 active:scale-95 magical-sparkle animate-float",
       },
       size: {
         default: "h-12 px-6 py-3",

@@ -67,6 +67,8 @@ const ingredientToPumpMap: Record<string, number> = {
 export function useCocktailMachine() {
   const [settings, setSettings] = useState<AppSettings>({
     language: 'de',
+    machineName: 'Cocktail Machine',
+    subLine: 'Professional Mixology System',
     enabledIngredients: {
       'vodka': true,
       'white_rum': true,

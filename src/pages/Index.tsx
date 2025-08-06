@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useCocktailMachine } from '@/hooks/useCocktailMachine';
+import { useTheme } from '@/hooks/useTheme';
 import { CocktailGrid } from '@/components/CocktailGrid';
 import { SettingsScreen } from '@/components/SettingsScreen';
 import { ServingProgress } from '@/components/ServingProgress';
 import { ConfirmationDialog } from '@/components/ConfirmationDialog';
 import { Button } from '@/components/ui/button';
 import { CocktailRecipe } from '@/types/cocktail';
-import { Settings, Martini, Sparkles } from 'lucide-react';
+import { Settings, Martini, Sparkles, Wand2 } from 'lucide-react';
 
 type AppScreen = 'menu' | 'settings' | 'serving';
 
@@ -22,6 +23,9 @@ const Index = () => {
     stopServing,
     updateSettings
   } = useCocktailMachine();
+  
+  // Apply theme based on selected language
+  useTheme(settings.language);
 
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('menu');
   const [selectedCocktail, setSelectedCocktail] = useState<CocktailRecipe | null>(null);
@@ -98,13 +102,19 @@ const Index = () => {
       <header className="bg-gradient-surface border-b border-card-border p-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-primary rounded-lg">
-              <Martini className="h-8 w-8 text-primary-foreground" />
+            <div className={`p-2 bg-gradient-primary rounded-lg ${settings.language === 'hogwarts' ? 'magical-sparkle' : ''}`}>
+              {settings.language === 'hogwarts' ? (
+                <Wand2 className="h-8 w-8 text-primary-foreground animate-float" />
+              ) : (
+                <Martini className="h-8 w-8 text-primary-foreground" />
+              )}
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Cocktail Machine</h1>
+              <h1 className={`text-2xl font-bold text-foreground ${settings.language === 'hogwarts' ? 'text-magical' : ''}`}>
+                {settings.machineName}
+              </h1>
               <p className="text-sm text-muted-foreground">
-                Professional Mixology System
+                {settings.subLine}
               </p>
             </div>
           </div>
@@ -125,12 +135,14 @@ const Index = () => {
       <main className="max-w-6xl mx-auto p-6">
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Sparkles className="h-6 w-6 text-primary animate-pulse" />
-            <h2 className="text-3xl font-bold text-foreground">Choose Your Cocktail</h2>
-            <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+            <Sparkles className={`h-6 w-6 text-primary ${settings.language === 'hogwarts' ? 'animate-bounce' : 'animate-pulse'}`} />
+            <h2 className={`text-3xl font-bold text-foreground ${settings.language === 'hogwarts' ? 'text-magical' : ''}`}>
+              {settings.language === 'hogwarts' ? 'Choose Your Potion' : 'Choose Your Cocktail'}
+            </h2>
+            <Sparkles className={`h-6 w-6 text-primary ${settings.language === 'hogwarts' ? 'animate-bounce' : 'animate-pulse'}`} />
           </div>
           <p className="text-muted-foreground text-lg">
-            {availableCocktails.length} cocktails available with current ingredients
+            {availableCocktails.length} {settings.language === 'hogwarts' ? 'magical elixirs' : 'cocktails'} available with current ingredients
           </p>
         </div>
 
@@ -138,6 +150,7 @@ const Index = () => {
           cocktails={availableCocktails}
           getCocktailName={getCocktailName}
           getIngredientName={getIngredientName}
+          language={settings.language}
           onSelectCocktail={handleCocktailSelect}
         />
       </main>

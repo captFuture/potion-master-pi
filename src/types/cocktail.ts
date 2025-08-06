@@ -31,6 +31,8 @@ export type Language = 'de' | 'en' | 'hogwarts';
 export interface AppSettings {
   language: Language;
   enabledIngredients: Record<string, boolean>;
+  machineName: string;
+  subLine: string;
 }
 
 export interface ServingState {

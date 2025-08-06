@@ -6,6 +6,7 @@ interface CocktailGridProps {
   cocktails: CocktailRecipe[];
   getCocktailName: (cocktailId: string) => string;
   getIngredientName: (ingredientId: string) => string;
+  language: string;
   onSelectCocktail: (cocktailId: string) => void;
 }
 
@@ -13,17 +14,20 @@ export function CocktailGrid({
   cocktails, 
   getCocktailName, 
   getIngredientName, 
+  language,
   onSelectCocktail 
 }: CocktailGridProps) {
+  const isHogwarts = language === 'hogwarts';
+  
   if (cocktails.length === 0) {
     return (
       <div className="text-center py-12">
         <Martini className="mx-auto h-16 w-16 text-muted-foreground mb-4" />
         <h3 className="text-xl font-semibold text-muted-foreground mb-2">
-          No cocktails available
+          {isHogwarts ? 'No magical elixirs available' : 'No cocktails available'}
         </h3>
         <p className="text-muted-foreground">
-          Please enable more ingredients in settings
+          {isHogwarts ? 'Please enable more ingredients in the potions laboratory' : 'Please enable more ingredients in settings'}
         </p>
       </div>
     );
@@ -34,17 +38,23 @@ export function CocktailGrid({
       {cocktails.map((cocktail) => (
         <Button
           key={cocktail.id}
-          variant="cocktail"
+          variant={isHogwarts ? "magical" : "cocktail"}
           size="cocktail"
           onClick={() => onSelectCocktail(cocktail.id)}
-          className="flex flex-col items-start text-left relative overflow-hidden group"
+          className={`flex flex-col items-start text-left relative overflow-hidden group ${
+            isHogwarts ? 'animate-float' : ''
+          }`}
         >
-          <div className="absolute top-4 right-4 opacity-20 group-hover:opacity-40 transition-opacity">
+          <div className={`absolute top-4 right-4 opacity-20 group-hover:opacity-40 transition-opacity ${
+            isHogwarts ? 'text-warning' : ''
+          }`}>
             <Sparkles className="h-8 w-8" />
           </div>
           
           <div className="w-full">
-            <h3 className="text-lg font-bold mb-3 text-foreground">
+            <h3 className={`text-lg font-bold mb-3 text-foreground ${
+              isHogwarts ? 'text-magical' : ''
+            }`}>
               {getCocktailName(cocktail.id)}
             </h3>
             
@@ -57,9 +67,11 @@ export function CocktailGrid({
               ))}
               
               {cocktail.post_add && (
-                <div className="text-xs text-warning mt-2 flex items-center gap-1">
+                <div className={`text-xs mt-2 flex items-center gap-1 ${
+                  isHogwarts ? 'text-warning' : 'text-warning'
+                }`}>
                   <Sparkles className="h-3 w-3" />
-                  <span>+ {getIngredientName(cocktail.post_add)}</span>
+                  <span>{isHogwarts ? '+ Manual enchantment: ' : '+ '}{getIngredientName(cocktail.post_add)}</span>
                 </div>
               )}
             </div>

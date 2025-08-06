@@ -2,26 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Cocktail Machine Design System - Modern, sophisticated touchscreen interface */
+/* Cocktail Machine Design System - Multi-theme support */
 
 @layer base {
   :root {
-    /* Core background and surfaces */
+    /* Default Theme - Modern Tech */
     --background: 220 15% 5%;
     --surface: 220 15% 8%;
     --surface-elevated: 220 15% 12%;
     --foreground: 220 15% 95%;
 
-    /* Card system */
     --card: 220 15% 8%;
     --card-foreground: 220 15% 95%;
     --card-border: 220 25% 20%;
 
-    /* Interactive elements */
     --popover: 220 15% 10%;
     --popover-foreground: 220 15% 95%;
 
-    /* Brand colors - Cocktail machine aesthetic */
     --primary: 195 85% 55%;
     --primary-glow: 195 85% 65%;
     --primary-foreground: 220 15% 5%;
@@ -30,7 +27,6 @@
     --secondary-glow: 280 50% 70%;
     --secondary-foreground: 220 15% 95%;
 
-    /* Status colors */
     --success: 142 76% 36%;
     --success-foreground: 220 15% 95%;
     
@@ -40,7 +36,6 @@
     --error: 0 84% 60%;
     --error-foreground: 220 15% 95%;
 
-    /* Muted elements */
     --muted: 220 15% 15%;
     --muted-foreground: 220 15% 65%;
 
@@ -56,7 +51,7 @@
 
     --radius: 1rem;
 
-    /* Gradients for cocktail machine aesthetics */
+    /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
     --gradient-secondary: linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--secondary-glow)));
     --gradient-surface: linear-gradient(145deg, hsl(var(--surface)) 0%, hsl(var(--surface-elevated)) 100%);
@@ -71,58 +66,79 @@
     --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+  /* German Theme - Professional Blue */
+  [data-theme="de"] {
+    --primary: 217 91% 60%;
+    --primary-glow: 217 91% 70%;
+    --secondary: 142 76% 36%;
+    --secondary-glow: 142 76% 46%;
+    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 70%));
+    --gradient-secondary: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
+  }
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+  /* English Theme - Royal Purple */
+  [data-theme="en"] {
+    --primary: 262 83% 58%;
+    --primary-glow: 262 83% 68%;
+    --secondary: 347 77% 50%;
+    --secondary-glow: 347 77% 60%;
+    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(262 83% 68%));
+    --gradient-secondary: linear-gradient(135deg, hsl(347 77% 50%), hsl(347 77% 60%));
+  }
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+  /* Hogwarts Theme - Magical Harry Potter */
+  [data-theme="hogwarts"] {
+    --background: 39 20% 8%;
+    --surface: 39 25% 12%;
+    --surface-elevated: 39 30% 16%;
+    --foreground: 45 90% 88%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --card: 39 25% 12%;
+    --card-foreground: 45 90% 88%;
+    --card-border: 45 40% 25%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --primary: 45 90% 55%;  /* Golden */
+    --primary-glow: 45 95% 65%;
+    --primary-foreground: 39 20% 8%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --secondary: 348 83% 47%; /* Gryffindor Red */
+    --secondary-glow: 348 83% 57%;
+    --secondary-foreground: 45 90% 88%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --success: 142 76% 36%; /* Slytherin Green */
+    --warning: 45 90% 55%; /* Hufflepuff Yellow */
+    --error: 348 83% 47%; /* Gryffindor Red */
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --muted: 39 25% 20%;
+    --muted-foreground: 45 40% 65%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --accent: 39 30% 18%;
+    --accent-foreground: 45 90% 85%;
+
+    --border: 45 40% 25%;
+    --input: 39 25% 18%;
+    --ring: 45 90% 55%;
+
+    --radius: 1.5rem;
+
+    /* Magical gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(45 90% 55%) 0%, hsl(45 95% 65%) 50%, hsl(38 75% 55%) 100%);
+    --gradient-secondary: linear-gradient(135deg, hsl(348 83% 47%) 0%, hsl(348 83% 57%) 50%, hsl(14 80% 50%) 100%);
+    --gradient-surface: linear-gradient(145deg, hsl(39 25% 12%) 0%, hsl(39 30% 16%) 50%, hsl(45 35% 18%) 100%);
+    
+    /* Magical shadows and glows */
+    --shadow-glow: 0 0 40px hsl(45 90% 55% / 0.4), 0 0 20px hsl(348 83% 47% / 0.2);
+    --shadow-card: 0 8px 32px hsl(39 20% 0% / 0.7), inset 0 1px 0 hsl(45 40% 25% / 0.3);
+    --shadow-button: 0 4px 20px hsl(45 90% 55% / 0.5), 0 0 15px hsl(348 83% 47% / 0.3);
   }
 }
 
@@ -133,5 +149,48 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Hogwarts specific animations and effects */
+  [data-theme="hogwarts"] .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  [data-theme="hogwarts"] .text-magical {
+    background: linear-gradient(45deg, hsl(45 90% 55%), hsl(348 83% 47%), hsl(45 90% 55%));
+    background-size: 200% 200%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes shimmer {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  /* Magical sparkle effects for Hogwarts theme */
+  [data-theme="hogwarts"] .magical-sparkle {
+    position: relative;
+  }
+
+  [data-theme="hogwarts"] .magical-sparkle::before {
+    content: "✨";
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    animation: twinkle 1.5s ease-in-out infinite;
+    opacity: 0.7;
+  }
+
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
   }
 }
