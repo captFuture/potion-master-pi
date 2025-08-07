@@ -133,18 +133,6 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto p-6">
-        <div className="mb-8 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Sparkles className={`h-6 w-6 text-primary ${settings.language === 'hogwarts' ? 'animate-bounce' : 'animate-pulse'}`} />
-            <h2 className={`text-3xl font-bold text-foreground ${settings.language === 'hogwarts' ? 'text-magical' : ''}`}>
-              {settings.language === 'hogwarts' ? 'Choose Your Potion' : 'Choose Your Cocktail'}
-            </h2>
-            <Sparkles className={`h-6 w-6 text-primary ${settings.language === 'hogwarts' ? 'animate-bounce' : 'animate-pulse'}`} />
-          </div>
-          <p className="text-muted-foreground text-lg">
-            {availableCocktails.length} {settings.language === 'hogwarts' ? 'magical elixirs' : 'cocktails'} available with current ingredients
-          </p>
-        </div>
 
         <CocktailGrid
           cocktails={availableCocktails}
