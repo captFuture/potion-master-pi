@@ -5,6 +5,7 @@ export interface HardwareStatus {
   isConnected: boolean;
   relayStatus: boolean;
   scaleStatus: boolean;
+  wifiStatus: boolean;
   currentWeight: number;
   activePumps: Set<number>;
 }
@@ -14,6 +15,7 @@ export function useHardware() {
     isConnected: false,
     relayStatus: false,
     scaleStatus: false,
+    wifiStatus: false,
     currentWeight: 0,
     activePumps: new Set()
   });
@@ -25,30 +27,45 @@ export function useHardware() {
         const hwStatus = await hardwareAPI.getStatus();
         setStatus(prev => ({
           ...prev,
-          isConnected: hwStatus.status === 'ready',
-          relayStatus: hwStatus.status === 'ready',
-          scaleStatus: hwStatus.scale
+          isConnected: hwStatus.relay && hwStatus.scale,
+          relayStatus: hwStatus.relay,
+          scaleStatus: hwStatus.scale,
+          wifiStatus: hwStatus.wifi
         }));
       } catch (error) {
         setStatus(prev => ({
           ...prev,
           isConnected: false,
           relayStatus: false,
-          scaleStatus: false
+          scaleStatus: false,
+          wifiStatus: false
         }));
       }
     };
 
-    checkStatus();
-    const interval = setInterval(checkStatus, 5000);
+    const updateWeight = async () => {
+      try {
+        const weight = await hardwareAPI.getWeight();
+        setStatus(prev => ({ ...prev, currentWeight: weight }));
+      } catch (error) {
+        console.error('Weight update failed:', error);
+      }
+    };
 
-    // Listen to weight updates
+    checkStatus();
+    updateWeight();
+    
+    const statusInterval = setInterval(checkStatus, 5000);
+    const weightInterval = setInterval(updateWeight, 1000);
+
+    // Listen to weight updates from WebSocket
     hardwareAPI.onWeightUpdate((weight) => {
       setStatus(prev => ({ ...prev, currentWeight: weight }));
     });
 
     return () => {
-      clearInterval(interval);
+      clearInterval(statusInterval);
+      clearInterval(weightInterval);
       hardwareAPI.disconnect();
     };
   }, []);
