@@ -139,17 +139,13 @@ class CocktailMachine {
     console.log('Tarierung der M5Stack MiniScale...');
     
     try {
-      // Write to offset register (0x50) to reset tare
+      // Write to tare register (0x50) to reset tare
       this.i2cBus.writeByteSync(this.scaleAddress, 0x50, 0x1);
       
       // Wait a moment for the scale to process
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
       
-      // Read current weight to set as tare offset
-      const currentWeight = await this.readWeight();
-      this.tareOffset = currentWeight;
-      
-      console.log(`M5Stack MiniScale tariert. Offset: ${this.tareOffset}g`);
+      console.log('M5Stack MiniScale tariert erfolgreich');
     } catch (error) {
       console.error('Tare error:', error);
       throw error;
