@@ -37,7 +37,7 @@ fi
 
 # Boot splash image installieren
 echo "🖼️ Installing custom splash screen..."
-sudo cp src/data/rpi_splash.png /usr/share/pixmaps/splash.png
+sudo cp src/data/rpi_splash.png /usr/share/plymouth/themes/pix/splash.png
 
 # Boot splash konfigurieren
 if ! grep -q "splash" /boot/cmdline.txt; then
@@ -67,7 +67,7 @@ EOF
 echo "✅ Setup complete!"
 echo ""
 echo "🔧 Hardware Setup:"
-echo "   I2C Relais Board → Adresse 0x20"
+echo "   I2C Relais Board → Adresse 0x26"
 echo "   M5Stack MiniScale → Adresse 0x26"
 echo ""
 echo "🚀 Starting services..."
