@@ -64,13 +64,24 @@ cat > ~/.config/chromium/Default/Preferences << 'EOF'
 }
 EOF
 
+# I2C Tools für Hardware-Tests
+echo "🔧 Installing I2C tools..."
+sudo apt install -y i2c-tools
+
 echo "✅ Setup complete!"
 echo ""
 echo "🔧 Hardware Setup:"
 echo "   I2C Relais Board → Adresse 0x26"
 echo "   M5Stack MiniScale → Adresse 0x26"
 echo ""
+echo "🧪 Testing hardware..."
+cd hardware
+echo "Running I2C scan..."
+npm run test-i2c
+
+echo ""
 echo "🚀 Starting services..."
+cd ..
 sudo systemctl start cocktail-machine.service
 
 echo "🌐 Web interface: http://localhost:3000"

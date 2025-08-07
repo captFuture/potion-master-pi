@@ -83,8 +83,7 @@ sudo apt-get install -y nodejs
 sudo apt install -y git chromium-browser xinit xorg
 
 # I2C Tools für Hardware-Tests
-sudo apt install -y i2c-tools python3-pip
-sudo pip3 install RPi.GPIO hx711
+sudo apt install -y i2c-tools
 ```
 
 ### 3. Projekt klonen und einrichten
@@ -102,40 +101,22 @@ chmod +x scripts/setup-pi.sh
 
 ### 4. Hardware konfigurieren
 
-#### I2C Geräte testen:
+#### I2C Hardware testen:
 ```bash
-# I2C Geräte scannen
-sudo i2cdetect -y 1
+cd hardware
+
+# Alle I2C Geräte scannen
+npm run test-i2c
 # Sollte Adressen 0x20 (Relais) und 0x26 (Waage) anzeigen
 
-# Relais testen (Kanal 1 ein/aus)
-cd hardware
-node -e "
-const i2c = require('i2c-bus');
-const bus = i2c.openSync(1);
-bus.writeByteSync(0x20, 0xFE); // Kanal 1 an
-setTimeout(() => bus.writeByteSync(0x20, 0xFF), 2000); // Alle aus
-"
-```
+# Relais-Board testen (alle 8 Kanäle)
+npm run test-relay
 
-#### M5Stack MiniScale kalibrieren:
-```bash
-cd hardware
-# Waage testen und tarieren
-node -e "
-const i2c = require('i2c-bus');
-const bus = i2c.openSync(1);
+# M5Stack MiniScale testen
+npm run test-scale
 
-// Gewicht lesen (4 Bytes von Register 0x10)
-const buffer = Buffer.alloc(4);
-bus.i2cReadSync(0x26, 4, buffer);
-const weight = buffer.readInt32LE(0);
-console.log('Current weight:', weight);
-
-// Waage tarieren
-bus.writeByteSync(0x26, 0x30, 1);
-console.log('Scale tared');
-"
+# Alle Hardware-Tests ausführen
+npm run test-all
 ```
 
 #### Splash Screen konfigurieren:
@@ -263,9 +244,9 @@ sudo usermod -a -G i2c pi
 
 **Waage zeigt falsche Werte:**
 ```bash
-# Waage neu kalibrieren
+# Waage testen und tarieren
 cd hardware
-node calibrate-scale.js
+npm run test-scale
 ```
 
 **Touch-Display reagiert nicht:**
@@ -289,11 +270,14 @@ sudo journalctl -u cocktail-machine.service --no-pager
 ### Hardware-Tests
 
 ```bash
-# I2C Geräte scannen
-sudo i2cdetect -y 1
+# Alle Hardware-Tests ausführen
+cd hardware
+npm run test-all
 
-# GPIO Pins prüfen
-gpio readall
+# Einzelne Tests
+npm run test-i2c    # I2C Geräte scannen
+npm run test-relay  # Relais-Board testen
+npm run test-scale  # Waage testen
 
 # Hardware-API testen
 curl http://localhost:3000/api/status
