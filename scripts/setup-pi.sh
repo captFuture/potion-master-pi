@@ -10,6 +10,7 @@ git pull origin main
 sudo usermod -a -G gpio,i2c pi
 
 # Hardware Dependencies installieren
+cd ..
 cd hardware
 npm install
 
