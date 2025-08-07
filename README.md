@@ -36,8 +36,8 @@ GND → GND
 #### HX711 Waage
 ```
 Raspberry Pi → HX711
-GPIO 5 → DT (Data)
-GPIO 6 → SCK (Clock)
+GPIO 2 (SDA) → SDA
+GPIO 3 (SCL) → SCL
 5V → VCC
 GND → GND
 ```
@@ -69,9 +69,9 @@ sudo raspi-config
 # System aktualisieren
 sudo apt update && sudo apt upgrade -y
 
-# Node.js installieren (Version 18+)
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt install -y nodejs
+# Node.js installieren (Version lts)
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - &&\
+sudo apt-get install -y nodejs
 
 # Git und weitere Tools
 sudo apt install -y git chromium-browser xinit xorg
