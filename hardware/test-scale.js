@@ -18,7 +18,7 @@ async function testScale() {
     // Prüfen ob Gerät antwortet
     try {
       bus.receiveByteSync(SCALE_ADDRESS);
-      console.log('✅ M5Stack MiniScale responds at address 0x26');
+      console.log('✅ M5Stack MiniScale responds at address v');
     } catch (error) {
       console.log('❌ No response from M5Stack MiniScale at address 0x26');
       throw new Error('Scale not found');
@@ -41,7 +41,7 @@ async function testScale() {
     // Tarierung testen
     console.log('\n⚖️ Testing tare function...');
     try {
-      bus.writeByteSync(SCALE_ADDRESS, TARE_REGISTER);
+      bus.writeByteSync(SCALE_ADDRESS, TARE_REGISTER, 0x1);
       console.log('✅ Tare command sent successfully');
       
       // Kurz warten und dann Gewicht lesen
