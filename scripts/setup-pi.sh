@@ -2,6 +2,10 @@
 
 echo "🍹 Setting up Cocktail Machine on Raspberry Pi..."
 
+# Git Repository aktualisieren
+echo "📥 Pulling latest version from git..."
+git pull origin main
+
 # Benutzer zu gpio und i2c Gruppen hinzufügen
 sudo usermod -a -G gpio,i2c pi
 

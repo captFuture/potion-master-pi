@@ -6,6 +6,7 @@ After=network.target
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/potion-master-pi/hardware
+ExecStartPre=/bin/bash -c 'cd /home/pi/potion-master-pi && git pull origin main'
 ExecStart=/usr/bin/node cocktail-machine.js
 Restart=always
 RestartSec=10
