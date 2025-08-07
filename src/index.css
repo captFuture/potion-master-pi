@@ -12,8 +12,8 @@
     --surface-elevated: 220 15% 12%;
     --foreground: 220 15% 95%;
 
-    --card: 220 15% 8%;
-    --card-foreground: 220 15% 95%;
+    --card: 220 15% 12%;
+    --card-foreground: 220 15% 98%;
     --card-border: 220 25% 20%;
 
     --popover: 220 15% 10%;
@@ -102,8 +102,8 @@
     --surface-elevated: 39 30% 16%;
     --foreground: 45 90% 88%;
 
-    --card: 39 25% 12%;
-    --card-foreground: 45 90% 88%;
+    --card: 39 25% 16%;
+    --card-foreground: 45 90% 95%;
     --card-border: 45 40% 25%;
 
     --primary: 45 90% 55%;  /* Golden */
