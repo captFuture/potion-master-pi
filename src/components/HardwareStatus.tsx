@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useHardware } from '@/hooks/useHardware';
-import { Wifi, WifiOff, Scale, Zap } from 'lucide-react';
+import { Wifi, WifiOff, Scale, Zap, Router } from 'lucide-react';
 
 interface HardwareStatusProps {
   activePumps?: Set<number>;
@@ -23,7 +23,7 @@ export const HardwareStatus = ({ activePumps }: HardwareStatusProps) => {
 
   return (
     <div className="flex flex-col gap-4 p-4 bg-card border border-card-border rounded-lg min-w-[280px]">
-      {/* Connection Status */}
+      {/* Overall Status */}
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-foreground">Hardware Status</span>
         <div className="flex items-center gap-2">
@@ -33,8 +33,20 @@ export const HardwareStatus = ({ activePumps }: HardwareStatusProps) => {
             <WifiOff className="h-4 w-4 text-destructive" />
           )}
           <Badge variant={status.isConnected ? "default" : "destructive"}>
-            {status.isConnected ? "Connected" : "Offline"}
+            {status.isConnected ? "Ready" : "Offline"}
           </Badge>
+        </div>
+      </div>
+
+      {/* WiFi Status */}
+      <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center gap-2">
+          <Router className="h-4 w-4 text-muted-foreground" />
+          <span className="text-muted-foreground">WiFi</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className={`w-2 h-2 rounded-full ${status.wifiStatus ? 'bg-success' : 'bg-destructive'}`} />
+          <span className="text-xs">{status.wifiStatus ? 'Connected' : 'Offline'}</span>
         </div>
       </div>
 
