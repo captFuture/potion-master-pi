@@ -86,7 +86,7 @@ export function CocktailGrid({
             variant={isHogwarts ? "magical" : "cocktail"}
             size="cocktail"
             onClick={() => onSelectCocktail(cocktail.id)}
-            className={`flex flex-col items-start text-left relative overflow-hidden group ${
+            className={`flex flex-col items-start justify-end text-left relative overflow-hidden group ${
               isHogwarts ? 'animate-float' : ''
             }`}
           >
