@@ -96,25 +96,29 @@ export function CocktailGrid({
               <Sparkles className="h-8 w-8" />
             </div>
             
-            <div className="w-full">
-              <h3 className={`text-lg font-bold mb-3 text-foreground ${
-                isHogwarts ? 'text-magical' : ''
-              }`}>
+            {/* Cocktail preview image background */}
+            <div 
+              className="absolute inset-0 bg-no-repeat bg-center bg-contain opacity-10"
+              style={{
+                backgroundImage: `url(/cocktail-previews/${cocktail.id}.png)`
+              }}
+            />
+            
+            <div className="w-full relative z-10">
+              <h3 className="text-lg font-bold mb-3 text-gray-700">
                 {getCocktailName(cocktail.id)}
               </h3>
               
               <div className="space-y-1">
                 {Object.entries(cocktail.ingredients).map(([ingredient, amount]) => (
-                  <div key={ingredient} className="flex justify-between text-sm text-muted-foreground">
+                  <div key={ingredient} className="flex justify-between text-sm text-gray-600">
                     <span>{getIngredientName(ingredient)}</span>
                     <span>{amount}ml</span>
                   </div>
                 ))}
                 
                 {cocktail.post_add && (
-                  <div className={`text-xs mt-2 flex items-center gap-1 ${
-                    isHogwarts ? 'text-warning' : 'text-warning'
-                  }`}>
+                  <div className="text-xs mt-2 flex items-center gap-1 text-gray-600">
                     <Sparkles className="h-3 w-3" />
                     <span>{isHogwarts ? '+ Manual enchantment: ' : '+ '}{getIngredientName(cocktail.post_add)}</span>
                   </div>
