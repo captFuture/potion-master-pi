@@ -1,0 +1,18 @@
+[Unit]
+Description=Cocktail Machine Hardware Controller
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/potion-master-pi/hardware
+ExecStart=/usr/bin/node cocktail-machine.js
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+
+# Hardware access
+SupplementaryGroups=gpio i2c
+
+[Install]
+WantedBy=multi-user.target

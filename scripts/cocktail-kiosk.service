@@ -1,0 +1,16 @@
+[Unit]
+Description=Cocktail Machine Kiosk Mode
+After=cocktail-machine.service graphical-session.target
+Wants=cocktail-machine.service
+
+[Service]
+Type=simple
+User=pi
+Environment=DISPLAY=:0
+ExecStartPre=/bin/sleep 10
+ExecStart=/usr/bin/chromium-browser --kiosk --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-restore-session-state --disable-features=Translate --no-first-run --fast --fast-start --disable-default-apps --disable-popup-blocking --disable-translate --no-default-browser-check --no-first-run --autoplay-policy=no-user-gesture-required http://localhost:3000
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=graphical-session.target
