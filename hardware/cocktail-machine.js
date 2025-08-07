@@ -140,7 +140,7 @@ class CocktailMachine {
     
     try {
       // Write to offset register (0x50) to reset tare
-      this.i2cBus.writeByteSync(this.scaleAddress, 0x50);
+      this.i2cBus.writeByteSync(this.scaleAddress, 0x50, 0x1);
       
       // Wait a moment for the scale to process
       await new Promise(resolve => setTimeout(resolve, 100));
