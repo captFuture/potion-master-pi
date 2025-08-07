@@ -32,8 +32,8 @@ export const HardwareStatus = ({ activePumps }: HardwareStatusProps) => {
           ) : (
             <WifiOff className="h-4 w-4 text-destructive" />
           )}
-          <Badge variant={status.isConnected ? "default" : "destructive"}>
-            {status.isConnected ? "Ready" : "Offline"}
+          <Badge variant={status.isConnected ? "default" : status.wifiStatus ? "secondary" : "destructive"}>
+            {status.isConnected ? "Ready" : status.wifiStatus ? "Mock Mode" : "Offline"}
           </Badge>
         </div>
       </div>

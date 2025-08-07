@@ -231,6 +231,20 @@ sudo systemctl restart cocktail-machine.service
 
 ### Häufige Probleme
 
+**"Failed to fetch" Errors / Weight not shown:**
+```bash
+# Hardware Server muss separat gestartet werden
+cd hardware
+npm start
+
+# Oder Service starten
+sudo systemctl start cocktail-machine.service
+sudo systemctl status cocktail-machine.service
+
+# Mock-Modus wird automatisch aktiviert wenn Server nicht verfügbar
+# Status zeigt dann "Mock Mode" statt "Ready"
+```
+
 **I2C funktioniert nicht:**
 ```bash
 # I2C aktivieren
@@ -240,13 +254,30 @@ sudo raspi-config
 # Berechtigungen prüfen
 groups pi | grep i2c
 sudo usermod -a -G i2c pi
+
+# I2C Geräte scannen
+sudo i2cdetect -y 1
+# Sollte zeigen: 0x20 (Relais), 0x26 (Waage)
 ```
 
 **Waage zeigt falsche Werte:**
 ```bash
 # Waage testen und tarieren
 cd hardware
-npm run test-scale
+npm run test:scale
+
+# Tare Register ist 0x50 (nicht 0x30)
+# Write 1 to register 0x50 to tare
+```
+
+**Relais reagieren nicht:**
+```bash
+# Relais-Board testen
+cd hardware
+npm run test:relay
+
+# I2C Adresse prüfen (sollte 0x20 sein)
+sudo i2cdetect -y 1
 ```
 
 **Touch-Display reagiert nicht:**
@@ -272,16 +303,44 @@ sudo journalctl -u cocktail-machine.service --no-pager
 ```bash
 # Alle Hardware-Tests ausführen
 cd hardware
-npm run test-all
+npm run test:all
 
 # Einzelne Tests
-npm run test-i2c    # I2C Geräte scannen
-npm run test-relay  # Relais-Board testen
-npm run test-scale  # Waage testen
+npm run test:i2c    # I2C Geräte scannen
+npm run test:relay  # Relais-Board testen
+npm run test:scale  # Waage testen
 
 # Hardware-API testen
 curl http://localhost:3000/api/status
 ```
+
+### Development vs Production
+
+**Development Mode:**
+```bash
+# Frontend (React Dev Server)
+npm run dev
+
+# Hardware Server (separates Terminal)
+cd hardware
+npm start
+```
+
+**Production Mode:**
+```bash
+# Build React App
+npm run build
+
+# Services werden automatisch gestartet
+sudo systemctl status cocktail-machine
+sudo systemctl status cocktail-kiosk
+```
+
+**Mock Mode:**
+- Aktiviert sich automatisch wenn Hardware-Server nicht verfügbar
+- Simulierte Gewichtswerte
+- Alle UI-Funktionen verfügbar
+- Status zeigt "Mock Mode"
 
 ## 📁 Projektstruktur
 
