@@ -35,11 +35,19 @@ if ! grep -q "dtoverlay=vc4-kms-v3d" /boot/config.txt; then
     echo "dtoverlay=vc4-kms-v3d" | sudo tee -a /boot/config.txt
 fi
 
-# Boot-Zeit optimieren
+# Boot splash image installieren
+echo "🖼️ Installing custom splash screen..."
+sudo cp src/data/rpi_splash.png /usr/share/pixmaps/splash.png
+
+# Boot splash konfigurieren
+if ! grep -q "splash" /boot/cmdline.txt; then
+    sudo sed -i 's/$/ quiet splash plymouth.ignore-serial-consoles/' /boot/cmdline.txt
+fi
+
+# Boot-Zeit optimieren (behält WiFi und Bluetooth aktiv)
 echo "⚡ Optimizing boot time..."
-sudo systemctl disable bluetooth
-sudo systemctl disable wifi-connect
 sudo systemctl disable triggerhappy
+sudo systemctl disable dphys-swapfile
 
 # Chromium Kiosk Einstellungen
 mkdir -p ~/.config/chromium/Default
@@ -60,7 +68,7 @@ echo "✅ Setup complete!"
 echo ""
 echo "🔧 Hardware Setup:"
 echo "   I2C Relais Board → Adresse 0x20"
-echo "   HX711 Waage → GPIO 5 (Data), GPIO 6 (Clock)"
+echo "   M5Stack MiniScale → Adresse 0x26"
 echo ""
 echo "🚀 Starting services..."
 sudo systemctl start cocktail-machine.service

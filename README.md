@@ -33,14 +33,19 @@ GPIO 3 (SCL) → SCL
 GND → GND
 ```
 
-#### HX711 Waage
+#### M5Stack MiniScale (I2C-Waage, Adresse 0x26)
 ```
-Raspberry Pi → HX711
+Raspberry Pi → M5Stack MiniScale
 GPIO 2 (SDA) → SDA
 GPIO 3 (SCL) → SCL
 5V → VCC
 GND → GND
 ```
+
+**I2C-Protokoll:**
+- Adresse: 0x26
+- Weight Register: 0x10 (4 Bytes, Little Endian)
+- Tare Register: 0x30 (Write 1 to tare)
 
 #### Pumpen (über Relais)
 - Kanal 1-8: Je eine Peristaltik-Pumpe (12V)
@@ -62,6 +67,7 @@ sudo raspi-config
 - Interface Options → I2C → Enable
 - Interface Options → VNC → Enable (optional)
 - Advanced Options → Memory Split → 128
+- Boot Options → Splash Screen → Enable (für Custom Splash)
 
 ### 2. System-Updates und Dependencies
 
@@ -96,11 +102,11 @@ chmod +x scripts/setup-pi.sh
 
 ### 4. Hardware konfigurieren
 
-#### I2C Relais testen:
+#### I2C Geräte testen:
 ```bash
 # I2C Geräte scannen
 sudo i2cdetect -y 1
-# Sollte Adresse 0x20 anzeigen
+# Sollte Adressen 0x20 (Relais) und 0x26 (Waage) anzeigen
 
 # Relais testen (Kanal 1 ein/aus)
 cd hardware
@@ -112,24 +118,32 @@ setTimeout(() => bus.writeByteSync(0x20, 0xFF), 2000); // Alle aus
 "
 ```
 
-#### Waage kalibrieren:
+#### M5Stack MiniScale kalibrieren:
 ```bash
 cd hardware
-# Waage ohne Gewicht starten für Nullpunkt
+# Waage testen und tarieren
 node -e "
-const HX711 = require('./hx711-wrapper');
-const scale = new HX711(5, 6);
-console.log('Tare value:', scale.tare());
-"
+const i2c = require('i2c-bus');
+const bus = i2c.openSync(1);
 
-# Mit bekanntem Gewicht (z.B. 100g) für Kalibrierung
-node -e "
-const HX711 = require('./hx711-wrapper');
-const scale = new HX711(5, 6);
-scale.setOffset(TARE_VALUE); // Von vorherigem Schritt
-console.log('Put 100g on scale and press Enter...');
-// Kalibrierungsfaktor berechnen und in cocktail-machine.js eintragen
+// Gewicht lesen (4 Bytes von Register 0x10)
+const buffer = Buffer.alloc(4);
+bus.i2cReadSync(0x26, 4, buffer);
+const weight = buffer.readInt32LE(0);
+console.log('Current weight:', weight);
+
+// Waage tarieren
+bus.writeByteSync(0x26, 0x30, 1);
+console.log('Scale tared');
 "
+```
+
+#### Splash Screen konfigurieren:
+```bash
+# Custom Splash Image wurde automatisch installiert
+# Splash Screen manuell aktivieren:
+sudo plymouth-set-default-theme spinner
+sudo update-initramfs -u
 ```
 
 ## 🎮 Verwendung
@@ -205,16 +219,19 @@ Pumpen-Zuordnung in `src/data/ingredient_mapping.json`:
 In `hardware/cocktail-machine.js`:
 
 ```javascript
-// I2C Adresse
-const I2C_ADDRESS = 0x20;
+// I2C Adressen
+const RELAY_I2C_ADDRESS = 0x20;  // 8-Kanal Relais
+const SCALE_I2C_ADDRESS = 0x26;  // M5Stack MiniScale
 
-// HX711 Pins
-const HX711_DATA_PIN = 5;
-const HX711_CLOCK_PIN = 6;
+// Waage Register
+const WEIGHT_REGISTER = 0x10;    // 4 Bytes, Little Endian
+const TARE_REGISTER = 0x30;      // Write 1 to tare
 
-// Waage Kalibrierung
-const SCALE_OFFSET = -8388608; // Nullpunkt
-const SCALE_FACTOR = 2000;     // Kalibrierungsfaktor
+// Pumpen-Mapping
+const PUMP_CHANNELS = {
+  1: 0xFE, 2: 0xFD, 3: 0xFB, 4: 0xF7,
+  5: 0xEF, 6: 0xDF, 7: 0xBF, 8: 0x7F
+};
 ```
 
 ## 🔄 Updates
@@ -286,17 +303,37 @@ curl http://localhost:3000/api/status
 
 ```
 potion-master-pi/
-├── src/                      # Frontend (React + TypeScript)
+├── src/
 │   ├── components/           # UI Komponenten
-│   ├── data/                # Cocktail-Daten
-│   └── services/            # API Services
+│   │   ├── ui/              # Basis UI-Komponenten (shadcn)
+│   │   ├── CocktailGrid.tsx # Cocktail-Auswahl
+│   │   ├── HardwareStatus.tsx # Hardware-Statusanzeige
+│   │   ├── ServingProgress.tsx # Zubereitungs-Fortschritt
+│   │   └── SettingsScreen.tsx # Einstellungen
+│   ├── hooks/               # React Hooks
+│   │   ├── useHardware.ts   # Hardware-Integration
+│   │   ├── useCocktailMachine.ts # Mock für Entwicklung
+│   │   └── useTheme.ts      # Theme-Management
+│   ├── services/            # API Services
+│   │   ├── hardwareAPI.ts   # Hardware-Kommunikation
+│   │   └── cocktailService.ts # Cocktail-Zubereitung
+│   ├── data/                # Cocktail-Daten & Mapping
+│   │   ├── cocktails.json   # Rezept-Definitionen
+│   │   ├── ingredient_mapping.json # Pumpen-Zuordnung
+│   │   ├── cocktail_name_mapping.json # Übersetzungen
+│   │   ├── ingredient_category.json # Kategorien
+│   │   └── rpi_splash.png   # Boot Splash Screen
+│   ├── pages/               # Seiten-Komponenten
+│   │   ├── Index.tsx        # Hauptseite
+│   │   └── NotFound.tsx     # 404-Seite
+│   └── types/               # TypeScript Definitionen
 ├── hardware/                # Backend (Node.js)
 │   ├── cocktail-machine.js  # Hardware Controller
 │   └── package.json         # Node.js Dependencies
 ├── scripts/                 # Systemd Services & Setup
 │   ├── setup-pi.sh         # Installations-Script
-│   ├── cocktail-machine.service
-│   └── cocktail-kiosk.service
+│   ├── cocktail-machine.service # Hardware Service
+│   └── cocktail-kiosk.service # Kiosk Service
 └── public/                  # Statische Dateien
 ```
 

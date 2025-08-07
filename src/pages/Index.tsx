@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useCocktailMachine } from '@/hooks/useCocktailMachine';
+import { useHardware } from '@/hooks/useHardware';
 import { useTheme } from '@/hooks/useTheme';
 import { CocktailGrid } from '@/components/CocktailGrid';
 import { SettingsScreen } from '@/components/SettingsScreen';
@@ -25,13 +26,15 @@ const Index = () => {
     updateSettings
   } = useCocktailMachine();
   
+  const { status: hardwareStatus } = useHardware();
+  
   // Apply theme based on selected language
   useTheme(settings.language);
 
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('menu');
   const [selectedCocktail, setSelectedCocktail] = useState<CocktailRecipe | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [activePumps, setActivePumps] = useState<Set<number>>(new Set());
+  
 
   const handleCocktailSelect = (cocktailId: string) => {
     const cocktail = availableCocktails.find(c => c.id === cocktailId);
@@ -122,7 +125,7 @@ const Index = () => {
           </div>
           
           <div className="flex items-center gap-4">
-            <HardwareStatus activePumps={activePumps} />
+            <HardwareStatus activePumps={hardwareStatus.activePumps} />
             <Button 
               onClick={handleOpenSettings}
               variant="outline" 
