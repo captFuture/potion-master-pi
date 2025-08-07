@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const WebSocket = require('ws');
-const { Gpio } = require('onoff');
 const i2c = require('i2c-bus');
 
 class CocktailMachine {
@@ -10,16 +9,12 @@ class CocktailMachine {
     this.server = require('http').createServer(this.app);
     this.wss = new WebSocket.Server({ server: this.server });
     
-    // I2C Bus für Relais
+    // I2C Bus setup
     this.i2cBus = i2c.openSync(1);
     this.relayAddress = 0x20; // Standard PCF8574 Adresse
     
-    // HX711 Waage Pins
-    this.scaleDataPin = new Gpio(5, 'in');
-    this.scaleClockPin = new Gpio(6, 'out');
-    
-    // Kalibrierungswerte (müssen angepasst werden)
-    this.scaleCalibration = 1000; // Kalibrierungsfaktor
+    // M5Stack MiniScale I2C setup
+    this.scaleAddress = 0x26; // M5Stack MiniScale I2C address
     this.tareOffset = 0;
     
     this.setupMiddleware();
@@ -122,76 +117,43 @@ class CocktailMachine {
   }
   
   async readWeight() {
-    return new Promise((resolve, reject) => {
-      try {
-        let count = 0;
-        let readings = [];
-        
-        // 10 Messungen für Mittelwert
-        const readCycle = () => {
-          if (count >= 10) {
-            const average = readings.reduce((a, b) => a + b) / readings.length;
-            const weight = (average - this.tareOffset) / this.scaleCalibration;
-            resolve(Math.round(weight * 100) / 100); // 2 Dezimalstellen
-            return;
-          }
-          
-          // HX711 Daten lesen (vereinfacht)
-          const rawValue = this.readHX711();
-          readings.push(rawValue);
-          count++;
-          
-          setTimeout(readCycle, 10); // 10ms zwischen Messungen
-        };
-        
-        readCycle();
-        
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-  
-  readHX711() {
-    // Vereinfachte HX711 Implementierung
-    // In Produktion sollte eine robustere Bibliothek verwendet werden
-    let value = 0;
-    
-    // Warten bis Daten bereit sind
-    while (this.scaleDataPin.readSync() === 1) {
-      // Warten
+    try {
+      // M5Stack MiniScale: Read weight from register 0x10 (4 bytes float)
+      const buffer = Buffer.alloc(4);
+      this.i2cBus.readI2cBlockSync(this.scaleAddress, 0x10, 4, buffer);
+      
+      // Convert 4 bytes to float (little endian)
+      const weight = buffer.readFloatLE(0);
+      
+      // Apply tare offset
+      const finalWeight = weight - this.tareOffset;
+      
+      return Math.round(finalWeight * 100) / 100; // 2 decimal places
+    } catch (error) {
+      console.error('Scale reading error:', error);
+      throw error;
     }
-    
-    // 24 Bits lesen
-    for (let i = 0; i < 24; i++) {
-      this.scaleClockPin.writeSync(1);
-      value = (value << 1) | this.scaleDataPin.readSync();
-      this.scaleClockPin.writeSync(0);
-    }
-    
-    // Zusätzlicher Clock-Impuls für nächste Messung
-    this.scaleClockPin.writeSync(1);
-    this.scaleClockPin.writeSync(0);
-    
-    // 24-Bit zu 32-Bit signed
-    if (value & 0x800000) {
-      value |= 0xFF000000;
-    }
-    
-    return value;
   }
   
   async tareScale() {
-    console.log('Tarierung der Waage...');
-    const readings = [];
+    console.log('Tarierung der M5Stack MiniScale...');
     
-    for (let i = 0; i < 20; i++) {
-      readings.push(this.readHX711());
-      await new Promise(resolve => setTimeout(resolve, 50));
+    try {
+      // Write to offset register (0x50) to reset tare
+      this.i2cBus.writeByteSync(this.scaleAddress, 0x50);
+      
+      // Wait a moment for the scale to process
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Read current weight to set as tare offset
+      const currentWeight = await this.readWeight();
+      this.tareOffset = currentWeight;
+      
+      console.log(`M5Stack MiniScale tariert. Offset: ${this.tareOffset}g`);
+    } catch (error) {
+      console.error('Tare error:', error);
+      throw error;
     }
-    
-    this.tareOffset = readings.reduce((a, b) => a + b) / readings.length;
-    console.log(`Waage tariert. Offset: ${this.tareOffset}`);
   }
   
   start(port = 3000) {
@@ -208,10 +170,6 @@ class CocktailMachine {
     } catch (error) {
       console.error('Cleanup error:', error);
     }
-    
-    // GPIO cleanup
-    if (this.scaleDataPin) this.scaleDataPin.unexport();
-    if (this.scaleClockPin) this.scaleClockPin.unexport();
     
     // I2C Bus schließen
     if (this.i2cBus) this.i2cBus.closeSync();
