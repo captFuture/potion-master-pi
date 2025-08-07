@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCocktailMachine } from '@/hooks/useCocktailMachine';
 import { useTheme } from '@/hooks/useTheme';
 import { CocktailGrid } from '@/components/CocktailGrid';
 import { SettingsScreen } from '@/components/SettingsScreen';
 import { ServingProgress } from '@/components/ServingProgress';
 import { ConfirmationDialog } from '@/components/ConfirmationDialog';
+import { HardwareStatus } from '@/components/HardwareStatus';
 import { Button } from '@/components/ui/button';
 import { CocktailRecipe } from '@/types/cocktail';
 import { Settings, Martini, Sparkles, Wand2 } from 'lucide-react';
@@ -30,6 +31,7 @@ const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('menu');
   const [selectedCocktail, setSelectedCocktail] = useState<CocktailRecipe | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [activePumps, setActivePumps] = useState<Set<number>>(new Set());
 
   const handleCocktailSelect = (cocktailId: string) => {
     const cocktail = availableCocktails.find(c => c.id === cocktailId);
@@ -119,15 +121,18 @@ const Index = () => {
             </div>
           </div>
           
-          <Button 
-            onClick={handleOpenSettings}
-            variant="outline" 
-            size="lg"
-            className="gap-2"
-          >
-            <Settings className="h-5 w-5" />
-            Settings
-          </Button>
+          <div className="flex items-center gap-4">
+            <HardwareStatus activePumps={activePumps} />
+            <Button 
+              onClick={handleOpenSettings}
+              variant="outline" 
+              size="lg"
+              className="gap-2"
+            >
+              <Settings className="h-5 w-5" />
+              Settings
+            </Button>
+          </div>
         </div>
       </header>
 
