@@ -64,8 +64,45 @@ const defaultPumpMapping: Record<string, number> = {
   'soda': 8
 };
 
-export function useCocktailMachine() {
-  const [settings, setSettings] = useState<AppSettings>({
+const SETTINGS_STORAGE_KEY = 'cocktail-machine-settings';
+
+// Load settings from localStorage or use defaults
+const loadStoredSettings = (): AppSettings => {
+  try {
+    const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (stored) {
+      const parsedSettings = JSON.parse(stored);
+      // Merge with defaults to ensure all required fields exist
+      return {
+        language: 'de',
+        machineName: 'Cocktail Machine',
+        subLine: 'Professional Mixology System',
+        enabledIngredients: {
+          'vodka': true,
+          'white_rum': true,
+          'white_wine': true,
+          'orange_liqueur': true,
+          'lemon_juice': false,
+          'elderflower_syrup': false,
+          'passion_fruit_juice': false,
+          'soda': false,
+          'gin': false,
+          'aperol': false,
+          'prosecco': false,
+          'orange_juice': false,
+          'tonic_water': false,
+          'coca_cola': false
+        },
+        pumpMapping: defaultPumpMapping,
+        ...parsedSettings
+      };
+    }
+  } catch (error) {
+    console.warn('Failed to load stored settings:', error);
+  }
+  
+  // Return defaults if no stored settings or error
+  return {
     language: 'de',
     machineName: 'Cocktail Machine',
     subLine: 'Professional Mixology System',
@@ -86,7 +123,11 @@ export function useCocktailMachine() {
       'coca_cola': false
     },
     pumpMapping: defaultPumpMapping
-  });
+  };
+};
+
+export function useCocktailMachine() {
+  const [settings, setSettings] = useState<AppSettings>(loadStoredSettings);
 
   const [servingState, setServingState] = useState<ServingState>({
     cocktailId: null,
@@ -213,9 +254,20 @@ export function useCocktailMachine() {
     mockScale.reset();
   }, []);
 
-  // Update settings
+  // Update settings with persistence
   const updateSettings = useCallback((newSettings: Partial<AppSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+    setSettings(prev => {
+      const updatedSettings = { ...prev, ...newSettings };
+      
+      // Save to localStorage
+      try {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updatedSettings));
+      } catch (error) {
+        console.warn('Failed to save settings to localStorage:', error);
+      }
+      
+      return updatedSettings;
+    });
   }, []);
 
   return {
