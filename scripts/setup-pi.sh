@@ -30,6 +30,10 @@ sudo systemctl daemon-reload
 sudo systemctl enable cocktail-machine.service
 sudo systemctl enable cocktail-kiosk.service
 
+# Services stoppen falls sie bereits laufen
+sudo systemctl stop cocktail-machine.service 2>/dev/null || true
+sudo systemctl stop cocktail-kiosk.service 2>/dev/null || true
+
 # Touch-Display konfigurieren
 echo "📱 Configuring touch display..."
 if ! grep -q "dtoverlay=vc4-kms-v3d" /boot/config.txt; then
