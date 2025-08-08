@@ -52,7 +52,7 @@ export function PumpMappingGrid({
   const handlePumpChange = (pumpIndex: number, ingredient: string | null) => {
     const newMapping = { ...pumpMapping };
     
-    if (ingredient === null || ingredient === '') {
+    if (ingredient === null || ingredient === '' || ingredient === 'empty') {
       delete newMapping[pumpIndex];
     } else {
       // Remove ingredient from other pumps if already assigned
@@ -118,8 +118,8 @@ export function PumpMappingGrid({
                   <div key={pumpIndex} className="space-y-2">
                     <div className="text-sm font-medium text-center">Pump {pumpIndex}</div>
                     <Select
-                      value={pumpMapping[pumpIndex] || ''}
-                      onValueChange={(value) => handlePumpChange(pumpIndex, value === '' ? null : value)}
+                      value={pumpMapping[pumpIndex] || 'empty'}
+                      onValueChange={(value) => handlePumpChange(pumpIndex, value === 'empty' ? null : value)}
                     >
                       <SelectTrigger className="h-20 bg-input border-border">
                         <SelectValue placeholder="Empty">
@@ -134,7 +134,7 @@ export function PumpMappingGrid({
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent className="bg-popover border-border z-50">
-                        <SelectItem value="">Empty</SelectItem>
+                        <SelectItem value="empty">Empty</SelectItem>
                         {availableIngredients.concat(pumpMapping[pumpIndex] ? [pumpMapping[pumpIndex]] : [])
                           .filter(ingredient => enabledIngredients.includes(ingredient))
                           .map(ingredient => (
@@ -161,8 +161,8 @@ export function PumpMappingGrid({
                   <div key={pumpIndex} className="space-y-2">
                     <div className="text-sm font-medium text-center">Pump {pumpIndex}</div>
                     <Select
-                      value={pumpMapping[pumpIndex] || ''}
-                      onValueChange={(value) => handlePumpChange(pumpIndex, value === '' ? null : value)}
+                      value={pumpMapping[pumpIndex] || 'empty'}
+                      onValueChange={(value) => handlePumpChange(pumpIndex, value === 'empty' ? null : value)}
                     >
                       <SelectTrigger className="h-20 bg-input border-border">
                         <SelectValue placeholder="Empty">
@@ -177,7 +177,7 @@ export function PumpMappingGrid({
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent className="bg-popover border-border z-50">
-                        <SelectItem value="">Empty</SelectItem>
+                        <SelectItem value="empty">Empty</SelectItem>
                         {availableIngredients.concat(pumpMapping[pumpIndex] ? [pumpMapping[pumpIndex]] : [])
                           .filter(ingredient => enabledIngredients.includes(ingredient))
                           .map(ingredient => (
