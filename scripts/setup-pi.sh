@@ -15,22 +15,25 @@ echo ""
 echo "📦 Updating system packages..."
 sudo apt update
 
-# Remove conflicting packages and install required tools
+# Clean package management
 echo "🧹 Cleaning up conflicting packages..."
 sudo apt remove -y --purge nodejs-legacy npm 2>/dev/null || true
 sudo apt autoremove -y
-sudo apt install -y git i2c-tools curl
 
-# Ensure Node.js and npm are properly installed
+# Install essential packages
+echo "📦 Installing essential packages..."
+sudo apt install -y git i2c-tools curl chromium-browser
+
+# Install Node.js from NodeSource
 if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
     echo "📦 Installing Node.js and npm..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt install -y nodejs
 fi
 
-# Update Node.js to supported version if needed
+# Verify Node.js version
 NODE_VERSION=$(node --version | cut -d'v' -f2)
-echo "📋 Current Node.js version: $NODE_VERSION"
+echo "📋 Node.js version: $NODE_VERSION"
 
 # Add user to required groups
 echo ""
@@ -55,9 +58,9 @@ cd hardware
 rm -rf node_modules package-lock.json
 npm install
 
-# Build frontend
+# Install frontend dependencies and build
 echo ""
-echo "📦 Building frontend..."
+echo "📦 Installing frontend dependencies and building..."
 cd "$PROJECT_ROOT"
 rm -rf node_modules package-lock.json dist
 npm install
@@ -79,11 +82,10 @@ sudo cp scripts/cocktail-kiosk.service /etc/systemd/system/
 # Reload and enable services
 sudo systemctl daemon-reload
 sudo systemctl enable cocktail-machine.service
-sudo systemctl enable cocktail-kiosk.service
 
-# Configure system for kiosk mode
+# Configure system for hardware access
 echo ""
-echo "📱 Configuring system for kiosk mode..."
+echo "🔧 Configuring system for hardware access..."
 
 # Enable I2C
 if ! grep -q "dtparam=i2c_arm=on" /boot/config.txt; then
@@ -95,64 +97,32 @@ if ! grep -q "gpu_mem=128" /boot/config.txt; then
     echo "gpu_mem=128" | sudo tee -a /boot/config.txt
 fi
 
-# Install custom splash screen
-echo "🖼️ Installing custom splash screen..."
-if [ -f "src/data/rpi_splash.png" ]; then
-    sudo cp src/data/rpi_splash.png /usr/share/plymouth/themes/pix/splash.png
-fi
-
-# Configure boot splash
-if ! grep -q "splash" /boot/cmdline.txt; then
-    sudo sed -i 's/$/ quiet splash plymouth.ignore-serial-consoles/' /boot/cmdline.txt
-fi
-
-# Optimize boot time
-echo "⚡ Optimizing boot time..."
-sudo systemctl disable triggerhappy 2>/dev/null || true
-sudo systemctl disable dphys-swapfile 2>/dev/null || true
-
-# Configure Chromium for kiosk mode
-echo "🌐 Configuring Chromium..."
-mkdir -p ~/.config/chromium/Default
-cat > ~/.config/chromium/Default/Preferences << 'EOF'
-{
-   "profile": {
-      "default_content_setting_values": {
-         "geolocation": 1,
-         "media_stream": 1,
-         "notifications": 1
-      },
-      "exit_type": "Normal",
-      "password_manager_enabled": false
-   }
-}
-EOF
-
-# Install additional packages
-echo "📦 Installing additional packages..."
-sudo apt install -y chromium-browser xdotool unclutter
-
 # Test hardware
 echo ""
 echo "🧪 Testing hardware..."
 cd hardware
 echo "Running I2C scan..."
-npm run test-i2c || echo "⚠️ I2C test failed - hardware may not be connected"
+npm run test-i2c || echo "⚠️ I2C test failed - hardware may not be connected (will run in mock mode)"
 
-# Start services
+# Start hardware service
 echo ""
-echo "🚀 Starting services..."
+echo "🚀 Starting hardware service..."
 cd "$PROJECT_ROOT"
 sudo systemctl start cocktail-machine.service
 
-# Wait for hardware service to start
+# Wait for service to start
 echo "⏳ Waiting for hardware service to start..."
 sleep 5
 
 # Check service status
 echo ""
 echo "📊 Service Status:"
-sudo systemctl is-active cocktail-machine.service --quiet && echo "✅ Hardware service running" || echo "❌ Hardware service failed"
+if sudo systemctl is-active cocktail-machine.service --quiet; then
+    echo "✅ Hardware service running"
+else
+    echo "❌ Hardware service failed - checking logs..."
+    sudo journalctl -u cocktail-machine.service --no-pager -n 10
+fi
 
 echo ""
 echo "✅ Setup complete!"
@@ -163,15 +133,15 @@ echo "   I2C Relay Board → Address 0x20"
 echo "   M5Stack MiniScale → Address 0x26"
 echo ""
 echo "🌐 Access URLs:"
-echo "   Web Interface: http://localhost:3000"
-echo "   Hardware API: http://localhost:3001/api/status"
+echo "   Hardware API: http://localhost:3001/health"
+echo "   Hardware Status: http://localhost:3001/api/status"
 echo ""
 echo "🛠️ Useful Commands:"
-echo "   Check logs: sudo journalctl -u cocktail-machine.service -f"
-echo "   Restart services: sudo systemctl restart cocktail-machine.service"
+echo "   Check hardware logs: sudo journalctl -u cocktail-machine.service -f"
+echo "   Restart hardware: sudo systemctl restart cocktail-machine.service"
 echo "   Test hardware: cd hardware && npm run test-all"
+echo "   Start development: npm run dev"
+echo "   Update system: scripts/update-system.sh"
 echo ""
-echo "🔄 For full kiosk mode, reboot the system:"
-echo "   sudo reboot"
-echo ""
-echo "📝 Note: You may need to log out and back in for group permissions to take effect."
+echo "📝 Note: Hardware will run in mock mode if I2C devices are not connected."
+echo "📝 Reboot may be required for I2C changes to take effect."

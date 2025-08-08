@@ -9,33 +9,46 @@ class CocktailMachine {
     this.server = require('http').createServer(this.app);
     this.wss = new WebSocket.Server({ server: this.server });
     
-    // I2C Bus setup
-    this.i2cBus = i2c.openSync(1);
-    this.relayAddress = 0x20; // Standard PCF8574 Adresse
-    
-    // M5Stack MiniScale I2C setup
+    // Hardware configuration
+    this.relayAddress = 0x20; // Standard PCF8574 Address
     this.scaleAddress = 0x26; // M5Stack MiniScale I2C address
     this.tareRegister = 0x50; // Tare register
     this.weightRegister = 0x10; // Weight register
     
     // Pump status tracking
     this.activePumps = new Set();
+    this.i2cBus = null;
+    this.mockMode = false;
     
     console.log('🔧 Initializing Cocktail Machine...');
-    console.log(`📡 I2C Bus: 1`);
     console.log(`🔌 Relay Address: 0x${this.relayAddress.toString(16)}`);
     console.log(`⚖️ Scale Address: 0x${this.scaleAddress.toString(16)}`);
     
+    this.initializeI2C();
     this.setupMiddleware();
     this.setupRoutes();
     this.setupWebSocket();
     this.initializeHardware();
   }
+
+  initializeI2C() {
+    try {
+      this.i2cBus = i2c.openSync(1);
+      console.log('✅ I2C bus initialized successfully');
+    } catch (error) {
+      console.warn('⚠️ I2C initialization failed, running in mock mode:', error.message);
+      this.mockMode = true;
+    }
+  }
   
   setupMiddleware() {
     this.app.use(cors());
     this.app.use(express.json());
-    this.app.use(express.static('../dist')); // React Build
+    
+    // Health check endpoint
+    this.app.get('/health', (req, res) => {
+      res.json({ status: 'ok', mockMode: this.mockMode });
+    });
   }
   
   setupRoutes() {
@@ -111,16 +124,21 @@ class CocktailMachine {
         console.log(`🚀 Activating pump ${pumpNumber} for ${duration}ms`);
         this.activePumps.add(pumpNumber);
         
-        // Relais aktivieren (LOW = aktiviert bei den meisten Boards)
-        const activeMask = ~(1 << pumpNumber) & 0xFF;
-        this.i2cBus.writeByteSync(this.relayAddress, activeMask);
-        
-        console.log(`✅ Pump ${pumpNumber} activated with mask: 0x${activeMask.toString(16)}`);
+        if (this.mockMode) {
+          console.log(`🎭 Mock mode: Pump ${pumpNumber} activated`);
+        } else {
+          // Relay activation (LOW = activated for most boards)
+          const activeMask = ~(1 << pumpNumber) & 0xFF;
+          this.i2cBus.writeByteSync(this.relayAddress, activeMask);
+          console.log(`✅ Pump ${pumpNumber} activated with mask: 0x${activeMask.toString(16)}`);
+        }
         
         setTimeout(() => {
           try {
-            // Alle Relais deaktivieren
-            this.i2cBus.writeByteSync(this.relayAddress, 0xFF);
+            if (!this.mockMode) {
+              // Deactivate all relays
+              this.i2cBus.writeByteSync(this.relayAddress, 0xFF);
+            }
             this.activePumps.delete(pumpNumber);
             console.log(`🛑 Pump ${pumpNumber} deactivated`);
             resolve();
@@ -141,6 +159,12 @@ class CocktailMachine {
   
   async readWeight() {
     try {
+      if (this.mockMode) {
+        // Return mock weight with slight variation
+        const mockWeight = 0 + (Math.random() * 2 - 1);
+        return Math.round(mockWeight * 100) / 100;
+      }
+      
       console.log('📏 Reading weight from scale...');
       
       // M5Stack MiniScale: Read weight from register 0x10 (4 bytes float)
@@ -156,14 +180,22 @@ class CocktailMachine {
       return finalWeight;
     } catch (error) {
       console.error('❌ Scale reading error:', error);
+      if (!this.mockMode) {
+        return 0; // Fallback to 0 instead of throwing
+      }
       throw error;
     }
   }
   
   async tareScale() {
-    console.log('🔄 Taring M5Stack MiniScale...');
+    console.log('🔄 Taring scale...');
     
     try {
+      if (this.mockMode) {
+        console.log('🎭 Mock mode: Scale tared');
+        return;
+      }
+      
       // Write to tare register (0x50) to reset tare
       console.log(`📝 Writing 0x1 to tare register 0x${this.tareRegister.toString(16)} at address 0x${this.scaleAddress.toString(16)}`);
       this.i2cBus.writeByteSync(this.scaleAddress, this.tareRegister, 0x1);
@@ -171,7 +203,7 @@ class CocktailMachine {
       // Wait a moment for the scale to process
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      console.log('✅ M5Stack MiniScale tared successfully');
+      console.log('✅ Scale tared successfully');
     } catch (error) {
       console.error('❌ Tare error:', error);
       throw error;
@@ -181,6 +213,11 @@ class CocktailMachine {
   // Initialize and check hardware devices
   async initializeHardware() {
     console.log('🔍 Checking hardware devices...');
+    
+    if (this.mockMode) {
+      console.log('🎭 Running in mock mode - hardware simulation active');
+      return;
+    }
     
     try {
       // Initialize all relays to OFF state
@@ -201,6 +238,10 @@ class CocktailMachine {
 
   // Check I2C device availability
   async checkI2CDevice(address) {
+    if (this.mockMode) {
+      return true; // Mock devices are always "available"
+    }
+    
     try {
       this.i2cBus.receiveByteSync(address);
       return true;
@@ -262,15 +303,27 @@ class CocktailMachine {
   }
   
   cleanup() {
-    // Alle Relais deaktivieren
-    try {
-      this.i2cBus.writeByteSync(this.relayAddress, 0xFF);
-    } catch (error) {
-      console.error('Cleanup error:', error);
+    console.log('🧹 Cleaning up hardware...');
+    
+    // Deactivate all relays
+    if (!this.mockMode && this.i2cBus) {
+      try {
+        this.i2cBus.writeByteSync(this.relayAddress, 0xFF);
+        console.log('✅ All pumps deactivated');
+      } catch (error) {
+        console.error('❌ Cleanup error:', error);
+      }
     }
     
-    // I2C Bus schließen
-    if (this.i2cBus) this.i2cBus.closeSync();
+    // Close I2C Bus
+    if (this.i2cBus) {
+      try {
+        this.i2cBus.closeSync();
+        console.log('✅ I2C bus closed');
+      } catch (error) {
+        console.error('❌ I2C cleanup error:', error);
+      }
+    }
   }
 }
 

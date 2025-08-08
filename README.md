@@ -1,474 +1,262 @@
-# 🍹 Potion Master Pi - Cocktail Machine
-
-Ein automatisches Cocktail-Mischsystem basierend auf Raspberry Pi mit Touch-Display, I2C-Relais-Board und Präzisionswaage.
-
-## 🎯 Features
-
-- **Touch-Benutzeroberfläche**: Responsive Web-App optimiert für Touch-Displays
-- **Automatische Cocktail-Zubereitung**: 8-Kanal Pumpensteuerung über I2C-Relais
-- **Präzise Dosierung**: HX711-Waage für genaue Mengenangaben
-- **Echtzeit-Updates**: WebSocket-Verbindung für Live-Feedback
-- **Kiosk-Modus**: Vollbild-Anzeige beim Systemstart
-- **Auto-Update**: Automatisches Aktualisieren vom Git-Repository
-
-## 🛠 Hardware-Anforderungen
-
-### Hauptkomponenten
-- **Raspberry Pi 4** (empfohlen: 4GB RAM)
-- **MicroSD-Karte** (min. 32GB, Class 10)
-- **7" Touch-Display** (offizielles Raspberry Pi Display)
-- **I2C 8-Kanal Relais-Board** (Adresse 0x20)
-- **HX711 Wägezelle-Verstärker** mit Waage
-- **8x Peristaltik-Pumpen** (12V)
-- **12V Netzteil** (min. 5A für alle Pumpen)
-
-### Verkabelung
-
-#### I2C Relais-Board (Adresse 0x20)
-```
-Raspberry Pi → I2C Relais
-GPIO 2 (SDA) → SDA
-GPIO 3 (SCL) → SCL
-5V → VCC
-GND → GND
-```
-
-#### M5Stack MiniScale (I2C-Waage, Adresse 0x26)
-```
-Raspberry Pi → M5Stack MiniScale
-GPIO 2 (SDA) → SDA
-GPIO 3 (SCL) → SCL
-5V → VCC
-GND → GND
-```
-
-**I2C-Protokoll:**
-- Adresse: 0x26
-- Weight Register: 0x10 (4 Bytes, Little Endian)
-- Tare Register: 0x30 (Write 1 to tare)
-
-#### Pumpen (über Relais)
-- Kanal 1-8: Je eine Peristaltik-Pumpe (12V)
-- Gemeinsames 12V Netzteil für alle Pumpen
-- Relais schalten die 12V Versorgung
-
-## 🚀 Installation
-
-### 1. Raspberry Pi OS vorbereiten
-
-```bash
-# Raspberry Pi OS Lite (64-bit) auf SD-Karte flashen
-# SSH und I2C aktivieren über raspi-config
-sudo raspi-config
-```
-
-**Wichtige Einstellungen:**
-- Interface Options → SSH → Enable
-- Interface Options → I2C → Enable
-- Interface Options → VNC → Enable (optional)
-- Advanced Options → Memory Split → 128
-- Boot Options → Splash Screen → Enable (für Custom Splash)
-
-### 2. System-Updates und Dependencies
-
-```bash
-# System aktualisieren
-sudo apt update && sudo apt upgrade -y
-
-# Node.js installieren (Version lts)
-curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - &&\
-sudo apt-get install -y nodejs
-
-# Git und weitere Tools
-sudo apt install -y git chromium-browser xinit xorg
-
-# I2C Tools für Hardware-Tests
-sudo apt install -y i2c-tools
-```
-
-### 3. Projekt klonen und einrichten
-
-```bash
-# Projekt vom Repository klonen
-cd /home/pi
-git clone <YOUR_REPOSITORY_URL> potion-master-pi
-cd potion-master-pi
-
-# Setup-Script ausführen (automatische Installation)
-chmod +x scripts/setup-pi.sh
-./scripts/setup-pi.sh
-```
-
-### 4. Hardware konfigurieren
-
-#### I2C Hardware testen:
-```bash
-cd hardware
-
-# Alle I2C Geräte scannen
-npm run test-i2c
-# Sollte Adressen 0x20 (Relais) und 0x26 (Waage) anzeigen
-
-# Relais-Board testen (alle 8 Kanäle)
-npm run test-relay
-
-# M5Stack MiniScale testen
-npm run test-scale
-
-# Alle Hardware-Tests ausführen
-npm run test-all
-```
-
-#### Splash Screen konfigurieren:
-```bash
-# Custom Splash Image wurde automatisch installiert
-# Splash Screen manuell aktivieren:
-sudo plymouth-set-default-theme spinner
-sudo update-initramfs -u
-```
-
-## 🎮 Verwendung
-
-### Entwicklungsmodus
-```bash
-# Beide Services in Entwicklungsmodus starten
-./scripts/dev-mode.sh
-
-# Oder einzeln starten
-cd hardware && npm run dev  # Hardware-Service auf Port 3001
-npm run dev                 # Frontend auf Port 8080
-```
-
-### Produktionsmodus
-```bash
-# Setup und Services starten
-./scripts/setup-pi.sh
-
-# Oder manuell
-npm run build
-sudo systemctl start cocktail-machine.service
-sudo systemctl start cocktail-kiosk.service
-```
-
-### Services verwalten
-```bash
-# Hardware-Service
-sudo systemctl start cocktail-machine.service
-sudo systemctl stop cocktail-machine.service
-sudo systemctl status cocktail-machine.service
-
-# Kiosk-Service
-sudo systemctl start cocktail-kiosk.service
-sudo systemctl stop cocktail-kiosk.service
-
-# Services beim Boot aktivieren/deaktivieren
-sudo systemctl enable cocktail-machine.service
-sudo systemctl disable cocktail-kiosk.service
-```
-
-### Hardware testen
-```bash
-# Alle Hardware-Komponenten testen
-./scripts/test-hardware.sh
-
-# Einzeln testen
-cd hardware
-npm run test-i2c    # I2C-Geräte scannen
-npm run test-scale  # Waage testen
-npm run test-relay  # Relais-Board testen
-```
-
-### Web-Interface
-
-- **Produktion**: http://localhost:3000
-- **Entwicklung**: http://localhost:8080  
-- **Hardware API**: http://localhost:3001/api/status
-- **WebSocket**: ws://localhost:3001
-
-### Logs anzeigen
-
-```bash
-# Hardware-Service Logs
-sudo journalctl -u cocktail-machine.service -f
-
-# Kiosk-Service Logs
-sudo journalctl -u cocktail-kiosk.service -f
-
-# Alle System-Logs
-sudo journalctl -f
-```
-
-## 🔧 Konfiguration
-
-### Cocktail-Rezepte anpassen
-
-Rezepte sind in `src/data/cocktails.json` definiert:
-
-```json
-{
-  "id": "mojito",
-  "name": "Mojito",
-  "ingredients": [
-    {"ingredient": "white_rum", "amount": 50},
-    {"ingredient": "lime_juice", "amount": 20},
-    {"ingredient": "simple_syrup", "amount": 15}
-  ]
-}
-```
-
-### Ingredient-Mapping
-
-Pumpen-Zuordnung in `src/data/ingredient_mapping.json`:
-
-```json
-{
-  "white_rum": 1,
-  "lime_juice": 2,
-  "simple_syrup": 3
-}
-```
-
-### Hardware-Einstellungen
-
-In `hardware/cocktail-machine.js`:
-
-```javascript
-// I2C Adressen
-const RELAY_I2C_ADDRESS = 0x20;  // 8-Kanal Relais
-const SCALE_I2C_ADDRESS = 0x26;  // M5Stack MiniScale
-
-// Waage Register
-const WEIGHT_REGISTER = 0x10;    // 4 Bytes, Little Endian
-const TARE_REGISTER = 0x30;      // Write 1 to tare
-
-// Pumpen-Mapping
-const PUMP_CHANNELS = {
-  1: 0xFE, 2: 0xFD, 3: 0xFB, 4: 0xF7,
-  5: 0xEF, 6: 0xDF, 7: 0xBF, 8: 0x7F
-};
-```
-
-## 🔄 Updates
-
-Das System aktualisiert sich automatisch bei jedem Service-Neustart. Für manuelle Updates:
-
-```bash
-# Update-Script verwenden
-./scripts/update-system.sh
-
-# Oder manuell
-cd /home/pi/potion-master-pi
-git pull origin main
-rm -rf node_modules package-lock.json
-npm install
-npm run build
-cd hardware && rm -rf node_modules && npm install
-sudo systemctl restart cocktail-machine.service
-sudo systemctl restart cocktail-kiosk.service
-```
-
-## 🐛 Troubleshooting
-
-### Häufige Probleme
-
-**"Failed to fetch" Errors / Weight not shown:**
-```bash
-# Hardware Server muss separat gestartet werden
-cd hardware
-npm start
-
-# Oder Service starten
-sudo systemctl start cocktail-machine.service
-sudo systemctl status cocktail-machine.service
-
-# Mock-Modus wird automatisch aktiviert wenn Server nicht verfügbar
-# Status zeigt dann "Mock Mode" statt "Ready"
-```
-
-**I2C funktioniert nicht:**
-```bash
-# I2C aktivieren
-sudo raspi-config
-# Interface Options → I2C → Enable
-
-# Berechtigungen prüfen
-groups pi | grep i2c
-sudo usermod -a -G i2c pi
-
-# I2C Geräte scannen
-sudo i2cdetect -y 1
-# Sollte zeigen: 0x20 (Relais), 0x26 (Waage)
-```
-
-**Waage zeigt falsche Werte:**
-```bash
-# Waage testen und tarieren
-cd hardware
-npm run test:scale
-
-# Tare Register ist 0x50 (nicht 0x30)
-# Write 1 to register 0x50 to tare
-```
-
-**Relais reagieren nicht:**
-```bash
-# Relais-Board testen
-cd hardware
-npm run test:relay
-
-# I2C Adresse prüfen (sollte 0x20 sein)
-sudo i2cdetect -y 1
-```
-
-**Touch-Display reagiert nicht:**
-```bash
-# Display-Treiber prüfen
-dmesg | grep -i touch
-
-# Chromium im Debug-Modus
-chromium-browser --kiosk --enable-logging --v=1
-```
-
-**Service startet nicht:**
-```bash
-# Service-Status prüfen
-sudo systemctl status cocktail-machine.service
-
-# Logs analysieren
-sudo journalctl -u cocktail-machine.service --no-pager
-```
-
-### Hardware-Tests
-
-```bash
-# Alle Hardware-Tests ausführen
-cd hardware
-npm run test:all
-
-# Einzelne Tests
-npm run test:i2c    # I2C Geräte scannen
-npm run test:relay  # Relais-Board testen
-npm run test:scale  # Waage testen
-
-# Hardware-API testen
-curl http://localhost:3000/api/status
-```
-
-### Development vs Production
-
-**Development Mode:**
-```bash
-# Frontend (React Dev Server)
-npm run dev
-
-# Hardware Server (separates Terminal)
-cd hardware
-npm start
-```
-
-**Production Mode:**
-```bash
-# Build React App
-npm run build
-
-# Services werden automatisch gestartet
-sudo systemctl status cocktail-machine
-sudo systemctl status cocktail-kiosk
-```
-
-**Mock Mode:**
-- Aktiviert sich automatisch wenn Hardware-Server nicht verfügbar
-- Simulierte Gewichtswerte
-- Alle UI-Funktionen verfügbar
-- Status zeigt "Mock Mode"
-
-## 📁 Projektstruktur
+# Potion Master Pi - Cocktail Machine
+
+A React-based web interface for controlling a Raspberry Pi cocktail mixing machine with hardware integration.
+
+## Features
+
+- 🍹 Interactive cocktail selection and mixing
+- ⚖️ Real-time weight monitoring with M5Stack MiniScale
+- 🔌 8-channel relay control for pumps
+- 📱 Touch-friendly responsive interface
+- 🎮 Hardware abstraction with mock mode for development
+- 🚀 Production-ready systemd services
+
+## Hardware Requirements
+
+- Raspberry Pi 4 (recommended) or Raspberry Pi 3
+- M5Stack MiniScale (I2C address: 0x26)
+- 8-channel I2C relay board (I2C address: 0x20)
+- Peristaltic pumps connected to relays
+- 7" touchscreen (optional, for kiosk mode)
+
+## Quick Start
+
+### On Raspberry Pi
+
+1. **Clone and setup:**
+   ```bash
+   git clone <repository-url> potion-master-pi
+   cd potion-master-pi
+   chmod +x scripts/setup-pi.sh
+   ./scripts/setup-pi.sh
+   ```
+
+2. **Access the interface:**
+   - Hardware API: http://localhost:3001
+   - Web interface: Start with `npm run dev` or `scripts/start-kiosk.sh`
+
+### Development (Any Platform)
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   cd hardware && npm install && cd ..
+   ```
+
+2. **Start development servers:**
+   ```bash
+   # Option 1: Use the development script
+   scripts/dev-mode.sh
+   
+   # Option 2: Start manually
+   cd hardware && npm run dev &  # Hardware API on port 3001
+   npm run dev                   # Frontend on port 8080
+   ```
+
+## Project Structure
 
 ```
 potion-master-pi/
-├── src/
-│   ├── components/           # UI Komponenten
-│   │   ├── ui/              # Basis UI-Komponenten (shadcn)
-│   │   ├── CocktailGrid.tsx # Cocktail-Auswahl
-│   │   ├── HardwareStatus.tsx # Hardware-Statusanzeige
-│   │   ├── ServingProgress.tsx # Zubereitungs-Fortschritt
-│   │   └── SettingsScreen.tsx # Einstellungen
-│   ├── hooks/               # React Hooks
-│   │   ├── useHardware.ts   # Hardware-Integration
-│   │   ├── useCocktailMachine.ts # Mock für Entwicklung
-│   │   └── useTheme.ts      # Theme-Management
-│   ├── services/            # API Services
-│   │   ├── hardwareAPI.ts   # Hardware-Kommunikation
-│   │   └── cocktailService.ts # Cocktail-Zubereitung
-│   ├── data/                # Cocktail-Daten & Mapping
-│   │   ├── cocktails.json   # Rezept-Definitionen
-│   │   ├── ingredient_mapping.json # Pumpen-Zuordnung
-│   │   ├── cocktail_name_mapping.json # Übersetzungen
-│   │   ├── ingredient_category.json # Kategorien
-│   │   └── rpi_splash.png   # Boot Splash Screen
-│   ├── pages/               # Seiten-Komponenten
-│   │   ├── Index.tsx        # Hauptseite
-│   │   └── NotFound.tsx     # 404-Seite
-│   └── types/               # TypeScript Definitionen
-├── hardware/                # Backend (Node.js)
-│   ├── cocktail-machine.js  # Hardware Controller
-│   └── package.json         # Node.js Dependencies
-├── scripts/                 # Systemd Services & Setup
-│   ├── setup-pi.sh         # Installations-Script
-│   ├── cocktail-machine.service # Hardware Service
-│   └── cocktail-kiosk.service # Kiosk Service
-└── public/                  # Statische Dateien
+├── src/                     # React frontend
+│   ├── components/          # UI components
+│   ├── hooks/              # Custom React hooks
+│   ├── services/           # API services
+│   ├── data/               # Cocktail and ingredient data
+│   └── pages/              # Route components
+├── hardware/               # Hardware controller
+│   ├── cocktail-machine.js # Main hardware service
+│   ├── test-*.js          # Hardware test scripts
+│   └── package.json       # Hardware dependencies
+├── scripts/               # Setup and utility scripts
+│   ├── setup-pi.sh        # Full Pi setup script
+│   ├── update-system.sh   # Update and restart
+│   ├── dev-mode.sh        # Development mode
+│   ├── start-kiosk.sh     # Kiosk mode launcher
+│   └── *.service          # Systemd service files
+└── dist/                  # Built frontend (after npm run build)
 ```
 
-## 🛡 Sicherheit
+## API Endpoints
 
-- Services laufen unter `pi` Benutzer (nicht root)
-- I2C/GPIO Zugriff über Gruppen-Berechtigungen
-- Lokale Installation ohne externe Abhängigkeiten
-- HTTPS optional über Reverse-Proxy
+### Hardware Controller (Port 3001)
 
-## 📈 Weiterentwicklung
+- `GET /health` - Service health check
+- `GET /api/status` - Complete hardware status
+- `GET /api/weight` - Current scale reading
+- `POST /api/tare` - Tare the scale
+- `POST /api/pump` - Activate pump
+  ```json
+  {
+    "pump": 1,
+    "duration": 3000
+  }
+  ```
 
-### Geplante Features
-- [ ] RFID/NFC Bezahlsystem
-- [ ] Cocktail-Historie und Statistiken
-- [ ] Remote-Management über Web-API
-- [ ] Füllstands-Sensoren für Flaschen
-- [ ] Temperatur-Überwachung
+### WebSocket (Port 3001)
 
-### Entwicklung
+Real-time weight updates:
+```javascript
+const ws = new WebSocket('ws://localhost:3001');
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  if (data.type === 'weight') {
+    console.log('Weight:', data.data, 'g');
+  }
+};
+```
 
+## Hardware Configuration
+
+### I2C Setup
+
+The system uses I2C bus 1 for hardware communication:
+
+- **Relay Board (0x20)**: Controls 8 pumps via PCF8574 expander
+- **Scale (0x26)**: M5Stack MiniScale for weight measurement
+
+### Pump Mapping
+
+Pumps are numbered 0-7 and mapped to ingredients in `src/data/pump_mapping.json`:
+
+```json
+{
+  "0": "vodka",
+  "1": "gin",
+  "2": "rum",
+  ...
+}
+```
+
+## Available Scripts
+
+### Production Scripts
+
+- `scripts/setup-pi.sh` - Complete Raspberry Pi setup
+- `scripts/update-system.sh` - Update code and restart services
+- `scripts/start-kiosk.sh` - Start in kiosk mode
+
+### Development Scripts
+
+- `scripts/dev-mode.sh` - Start both services in development
+- `scripts/test-hardware.sh` - Test all hardware components
+
+### Hardware Scripts (in hardware/ directory)
+
+- `npm run test-i2c` - Scan I2C devices
+- `npm run test-scale` - Test scale communication
+- `npm run test-relay` - Test relay board
+- `npm run test-all` - Run all hardware tests
+
+### Frontend Scripts
+
+- `npm run dev` - Development server (port 8080)
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+
+## System Services
+
+When installed on Raspberry Pi, the system runs as systemd services:
+
+### cocktail-machine.service
+
+- Runs the hardware controller
+- Auto-starts on boot
+- Restarts on failure
+- Logs to systemd journal
+
+### cocktail-kiosk.service (optional)
+
+- Runs the web interface in kiosk mode
+- Depends on hardware service
+- Auto-starts in graphical mode
+
+**Service Commands:**
 ```bash
-# Development-Server starten
-npm run dev
+# Check status
+sudo systemctl status cocktail-machine.service
 
-# Hardware-Tests
-cd hardware
-npm test
+# View logs
+sudo journalctl -u cocktail-machine.service -f
 
-# Build für Produktion
-npm run build
+# Restart service
+sudo systemctl restart cocktail-machine.service
 ```
 
-## 📄 Lizenz
+## Troubleshooting
 
-MIT License - siehe LICENSE Datei für Details.
+### Hardware Issues
 
-## 🤝 Contributing
+1. **I2C not working:**
+   ```bash
+   # Check I2C is enabled
+   sudo raspi-config # → Interface Options → I2C → Enable
+   
+   # Scan for devices
+   sudo i2cdetect -y 1
+   ```
 
-1. Fork das Repository
-2. Feature-Branch erstellen (`git checkout -b feature/AmazingFeature`)
-3. Changes committen (`git commit -m 'Add AmazingFeature'`)
-4. Branch pushen (`git push origin feature/AmazingFeature`)
-5. Pull Request erstellen
+2. **Service won't start:**
+   ```bash
+   # Check logs
+   sudo journalctl -u cocktail-machine.service -n 50
+   
+   # Test hardware manually
+   cd hardware && npm run test-all
+   ```
 
-## 📞 Support
+3. **Permissions error:**
+   ```bash
+   # Add user to groups
+   sudo usermod -a -G gpio,i2c $USER
+   # Then logout and login again
+   ```
 
-Bei Problemen oder Fragen:
-- GitHub Issues für Bug-Reports
-- Dokumentation in diesem README
-- Hardware-Schema in `/docs/hardware/`
+### Development Issues
 
----
+1. **Mock mode**: Hardware service automatically runs in mock mode when I2C devices are not available
+2. **Port conflicts**: Hardware uses 3001, frontend development uses 8080
+3. **Build issues**: Run `npm install` in both root and hardware directories
 
-**🍹 Prost! Viel Spaß mit deiner automatischen Cocktail-Maschine! 🍹**
+### Network Access
+
+Access from other devices on the network:
+```bash
+# Start with host binding
+npm run preview -- --host 0.0.0.0 --port 3000
+# Then access via: http://[pi-ip-address]:3000
+```
+
+## Customization
+
+### Adding Cocktails
+
+Edit `src/data/cocktails.json` to add new recipes:
+
+```json
+{
+  "name": "New Cocktail",
+  "ingredients": {
+    "vodka": 30,
+    "cranberry": 60,
+    "lime": 10
+  },
+  "instructions": "Pour and enjoy!",
+  "image": "/cocktail-images/new-cocktail.jpg"
+}
+```
+
+### Pump Configuration
+
+Modify `src/data/pump_mapping.json` to match your hardware setup:
+
+```json
+{
+  "0": "vodka",
+  "1": "gin",
+  "2": "your-ingredient"
+}
+```
+
+## License
+
+MIT License - see LICENSE file for details.
