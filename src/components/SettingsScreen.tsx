@@ -41,6 +41,19 @@ export function SettingsScreen({
     const categoryIngredients = ingredientCategories[category as keyof IngredientCategories];
     const currentEnabledCount = categoryIngredients.filter(ing => settings.enabledIngredients[ing]).length;
     
+    // Special logic for external ingredients
+    if (category === 'external_ingredients') {
+      // Check if ingredient is enabled in alcoholic or non-alcoholic categories
+      const isEnabledInOtherCategories = 
+        ingredientCategories.alcoholic_ingredients.includes(ingredient) && settings.enabledIngredients[ingredient] ||
+        ingredientCategories.non_alcoholic_ingredients.includes(ingredient) && settings.enabledIngredients[ingredient];
+      
+      // If enabled in other categories, cannot enable in external
+      if (enabled && isEnabledInOtherCategories) {
+        return;
+      }
+    }
+    
     // If trying to enable and already at limit of 4, prevent it
     if (enabled && currentEnabledCount >= 4) {
       return;
@@ -80,18 +93,35 @@ export function SettingsScreen({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {ingredients.map((ingredient) => (
-          <div key={ingredient} className="flex items-center justify-between">
-            <span className="text-sm font-medium">
-              {getIngredientName(ingredient)}
-            </span>
-            <Switch
-              checked={settings.enabledIngredients[ingredient] || false}
-              onCheckedChange={(checked) => handleIngredientToggle(ingredient, checked, categoryKey)}
-              disabled={!settings.enabledIngredients[ingredient] && isAtLimit}
-            />
-          </div>
-        ))}
+        {ingredients.map((ingredient) => {
+          const isEnabled = settings.enabledIngredients[ingredient] || false;
+          
+          // Special logic for external ingredients
+          let isDisabled = false;
+          if (categoryKey === 'external_ingredients') {
+            // Check if ingredient is enabled in alcoholic or non-alcoholic categories
+            const isEnabledInOtherCategories = 
+              ingredientCategories.alcoholic_ingredients.includes(ingredient) && settings.enabledIngredients[ingredient] ||
+              ingredientCategories.non_alcoholic_ingredients.includes(ingredient) && settings.enabledIngredients[ingredient];
+            
+            isDisabled = isEnabledInOtherCategories || (!isEnabled && isAtLimit);
+          } else {
+            isDisabled = !isEnabled && isAtLimit;
+          }
+          
+          return (
+            <div key={ingredient} className="flex items-center justify-between">
+              <span className="text-sm font-medium">
+                {getIngredientName(ingredient)}
+              </span>
+              <Switch
+                checked={isEnabled}
+                onCheckedChange={(checked) => handleIngredientToggle(ingredient, checked, categoryKey)}
+                disabled={isDisabled}
+              />
+            </div>
+          );
+        })}
       </CardContent>
     </Card>
     );

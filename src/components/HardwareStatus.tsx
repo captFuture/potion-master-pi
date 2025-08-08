@@ -25,20 +25,18 @@ export const HardwareStatus = ({ activePumps }: HardwareStatusProps) => {
     return isOk ? 'text-success' : 'text-destructive';
   };
 
-  const getOverallStatusColor = () => {
-    if (status.isConnected) return 'text-success';
-    if (status.wifiStatus) return 'text-warning';
-    return 'text-destructive';
+  const getWifiStatusColor = () => {
+    return status.wifiStatus ? 'text-success' : 'text-destructive';
   };
 
   return (
     <div className="flex items-center gap-3">
-      {/* Overall Connection Status */}
+      {/* WiFi Status */}
       <div className="flex items-center gap-1">
-        {status.isConnected ? (
-          <Wifi className={`h-4 w-4 ${getOverallStatusColor()}`} />
+        {status.wifiStatus ? (
+          <Wifi className={`h-4 w-4 ${getWifiStatusColor()}`} />
         ) : (
-          <WifiOff className={`h-4 w-4 ${getOverallStatusColor()}`} />
+          <WifiOff className={`h-4 w-4 ${getWifiStatusColor()}`} />
         )}
       </div>
 

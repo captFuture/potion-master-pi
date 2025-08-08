@@ -129,11 +129,9 @@ const Index = () => {
             <Button 
               onClick={handleOpenSettings}
               variant="outline" 
-              size="lg"
-              className="gap-2"
+              size="icon"
             >
               <Settings className="h-5 w-5" />
-              Settings
             </Button>
           </div>
         </div>
