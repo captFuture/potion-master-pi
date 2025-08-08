@@ -17,6 +17,7 @@ npm install
 # Frontend bauen
 echo "📦 Building frontend..."
 cd ..
+rm -rf node_modules package-lock.json
 npm install
 npm run build
 
