@@ -14,7 +14,19 @@ echo "📁 Project root: $PROJECT_ROOT"
 echo ""
 echo "📦 Updating system packages..."
 sudo apt update
-sudo apt install -y git nodejs npm i2c-tools
+
+# Remove conflicting packages and install required tools
+echo "🧹 Cleaning up conflicting packages..."
+sudo apt remove -y --purge nodejs-legacy npm 2>/dev/null || true
+sudo apt autoremove -y
+sudo apt install -y git i2c-tools curl
+
+# Ensure Node.js and npm are properly installed
+if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
+    echo "📦 Installing Node.js and npm..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt install -y nodejs
+fi
 
 # Update Node.js to supported version if needed
 NODE_VERSION=$(node --version | cut -d'v' -f2)
