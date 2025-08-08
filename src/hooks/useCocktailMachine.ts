@@ -52,16 +52,16 @@ class MockI2CScale {
 const mockRelay = new MockI2CRelay();
 const mockScale = new MockI2CScale();
 
-// Map ingredients to pump indices (0-7)
-const ingredientToPumpMap: Record<string, number> = {
-  'vodka': 0,
-  'white_rum': 1,
-  'white_wine': 2,
-  'orange_liqueur': 3,
-  'lemon_juice': 4,
-  'elderflower_syrup': 5,
-  'passion_fruit_juice': 6,
-  'soda': 7
+// Default pump mapping (can be overridden by settings)
+const defaultPumpMapping: Record<string, number> = {
+  'vodka': 1,
+  'white_rum': 2,
+  'white_wine': 3,
+  'orange_liqueur': 4,
+  'lemon_juice': 5,
+  'elderflower_syrup': 6,
+  'passion_fruit_juice': 7,
+  'soda': 8
 };
 
 export function useCocktailMachine() {
@@ -74,11 +74,18 @@ export function useCocktailMachine() {
       'white_rum': true,
       'white_wine': true,
       'orange_liqueur': true,
-      'lemon_juice': true,
-      'elderflower_syrup': true,
-      'passion_fruit_juice': true,
-      'soda': true
-    }
+      'lemon_juice': false,
+      'elderflower_syrup': false,
+      'passion_fruit_juice': false,
+      'soda': false,
+      'gin': false,
+      'aperol': false,
+      'prosecco': false,
+      'orange_juice': false,
+      'tonic_water': false,
+      'coca_cola': false
+    },
+    pumpMapping: defaultPumpMapping
   });
 
   const [servingState, setServingState] = useState<ServingState>({
@@ -138,7 +145,8 @@ export function useCocktailMachine() {
     const ingredients = Object.entries(cocktail.ingredients);
     
     for (const [ingredient, amount] of ingredients) {
-      const pumpIndex = ingredientToPumpMap[ingredient];
+      const pumpMapping = settings.pumpMapping || defaultPumpMapping;
+      const pumpIndex = pumpMapping[ingredient];
       if (pumpIndex === undefined) {
         setServingState(prev => ({ 
           ...prev, 

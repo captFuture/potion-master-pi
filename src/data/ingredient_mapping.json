@@ -48,5 +48,25 @@
     "de": "Cola",
     "en": "Cola",
     "hogwarts": "Dunkeltrank"
+  },
+  "gin": {
+    "de": "Gin",
+    "en": "Gin",
+    "hogwarts": "Wacholder-Elixir"
+  },
+  "aperol": {
+    "de": "Aperol",
+    "en": "Aperol",
+    "hogwarts": "Orangenbitter-Tropfen"
+  },
+  "prosecco": {
+    "de": "Prosecco",
+    "en": "Prosecco",
+    "hogwarts": "Perlender Mondschein"
+  },
+  "orange_juice": {
+    "de": "Orangensaft",
+    "en": "Orange Juice",
+    "hogwarts": "Sonnenblut-Saft"
   }
 }

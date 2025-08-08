@@ -3,13 +3,17 @@
     "vodka",
     "white_rum",
     "white_wine",
-    "orange_liqueur"
+    "orange_liqueur",
+    "gin",
+    "aperol",
+    "prosecco"
   ],
   "non_alcoholic_ingredients": [
     "lemon_juice",
     "elderflower_syrup",
     "passion_fruit_juice",
-    "soda"
+    "soda",
+    "orange_juice"
   ],
   "external_ingredients": [
     "tonic_water",

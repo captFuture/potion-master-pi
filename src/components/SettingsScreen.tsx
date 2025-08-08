@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { AppSettings, Language, IngredientCategories } from '@/types/cocktail';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,7 +6,9 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Globe, Beaker, Wine, Coffee, Settings2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Globe, Beaker, Wine, Coffee, Settings2, Grid3X3, AlertTriangle } from 'lucide-react';
+import { PumpMappingGrid } from '@/components/PumpMappingGrid';
 
 interface SettingsScreenProps {
   settings: AppSettings;
@@ -28,11 +31,21 @@ export function SettingsScreen({
   onUpdateSettings, 
   onBack 
 }: SettingsScreenProps) {
+  const [showPumpMapping, setShowPumpMapping] = useState(false);
+
   const handleLanguageChange = (language: Language) => {
     onUpdateSettings({ language });
   };
 
-  const handleIngredientToggle = (ingredient: string, enabled: boolean) => {
+  const handleIngredientToggle = (ingredient: string, enabled: boolean, category: string) => {
+    const categoryIngredients = ingredientCategories[category as keyof IngredientCategories];
+    const currentEnabledCount = categoryIngredients.filter(ing => settings.enabledIngredients[ing]).length;
+    
+    // If trying to enable and already at limit of 4, prevent it
+    if (enabled && currentEnabledCount >= 4) {
+      return;
+    }
+    
     onUpdateSettings({
       enabledIngredients: {
         ...settings.enabledIngredients,
@@ -44,13 +57,26 @@ export function SettingsScreen({
   const renderIngredientCategory = (
     title: string, 
     ingredients: string[], 
-    icon: React.ReactNode
-  ) => (
+    icon: React.ReactNode,
+    categoryKey: string
+  ) => {
+    const enabledCount = ingredients.filter(ing => settings.enabledIngredients[ing]).length;
+    const isAtLimit = enabledCount >= 4;
+    
+    return (
     <Card className="bg-card border border-card-border">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          {icon}
-          {title}
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {icon}
+            {title}
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant={isAtLimit ? "destructive" : "secondary"}>
+              {enabledCount}/4
+            </Badge>
+            {isAtLimit && <AlertTriangle className="h-4 w-4 text-warning" />}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -61,13 +87,15 @@ export function SettingsScreen({
             </span>
             <Switch
               checked={settings.enabledIngredients[ingredient] || false}
-              onCheckedChange={(checked) => handleIngredientToggle(ingredient, checked)}
+              onCheckedChange={(checked) => handleIngredientToggle(ingredient, checked, categoryKey)}
+              disabled={!settings.enabledIngredients[ingredient] && isAtLimit}
             />
           </div>
         ))}
       </CardContent>
     </Card>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -140,27 +168,60 @@ export function SettingsScreen({
 
         <Separator />
 
+        {/* Pump Configuration */}
+        <Card className="bg-card border border-card-border">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Grid3X3 className="h-5 w-5 text-primary" />
+              Pump Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Configure which ingredients are connected to each physical pump position in the machine.
+            </p>
+            <Button
+              onClick={() => setShowPumpMapping(true)}
+              variant="outline"
+              className="w-full"
+            >
+              <Grid3X3 className="h-4 w-4 mr-2" />
+              Configure Pump Layout
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Separator />
+
         {/* Ingredient Configuration */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold">Available Ingredients</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Available Ingredients</h2>
+            <div className="text-sm text-muted-foreground">
+              Maximum 4 ingredients per category
+            </div>
+          </div>
           
           <div className="grid gap-6">
             {renderIngredientCategory(
               "Alcoholic Beverages",
               ingredientCategories.alcoholic_ingredients,
-              <Wine className="h-5 w-5 text-primary" />
+              <Wine className="h-5 w-5 text-primary" />,
+              "alcoholic_ingredients"
             )}
             
             {renderIngredientCategory(
               "Non-Alcoholic Ingredients",
               ingredientCategories.non_alcoholic_ingredients,
-              <Beaker className="h-5 w-5 text-secondary" />
+              <Beaker className="h-5 w-5 text-secondary" />,
+              "non_alcoholic_ingredients"
             )}
             
             {renderIngredientCategory(
               "External Additions",
               ingredientCategories.external_ingredients,
-              <Coffee className="h-5 w-5 text-warning" />
+              <Coffee className="h-5 w-5 text-warning" />,
+              "external_ingredients"
             )}
           </div>
         </div>
@@ -171,6 +232,15 @@ export function SettingsScreen({
           </Button>
         </div>
       </div>
+
+      <PumpMappingGrid
+        isOpen={showPumpMapping}
+        onClose={() => setShowPumpMapping(false)}
+        settings={settings}
+        ingredientCategories={ingredientCategories}
+        getIngredientName={getIngredientName}
+        onUpdateSettings={onUpdateSettings}
+      />
     </div>
   );
 }

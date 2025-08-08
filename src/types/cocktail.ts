@@ -33,6 +33,7 @@ export interface AppSettings {
   enabledIngredients: Record<string, boolean>;
   machineName: string;
   subLine: string;
+  pumpMapping?: Record<string, number>;
 }
 
 export interface ServingState {
