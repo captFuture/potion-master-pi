@@ -34,6 +34,7 @@ export interface AppSettings {
   machineName: string;
   subLine: string;
   pumpMapping?: Record<string, number>;
+  screensaverTimeout?: number; // in seconds, default 60
 }
 
 export interface ServingState {

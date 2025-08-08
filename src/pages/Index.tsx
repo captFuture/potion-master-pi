@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useCocktailMachine } from '@/hooks/useCocktailMachine';
 import { useHardware } from '@/hooks/useHardware';
 import { useTheme } from '@/hooks/useTheme';
+import { useScreensaver } from '@/hooks/useScreensaver';
 import { CocktailGrid } from '@/components/CocktailGrid';
 import { SettingsScreen } from '@/components/SettingsScreen';
 import { ServingProgress } from '@/components/ServingProgress';
 import { ConfirmationDialog } from '@/components/ConfirmationDialog';
 import { HardwareStatus } from '@/components/HardwareStatus';
+import { Screensaver } from '@/components/Screensaver';
 import { Button } from '@/components/ui/button';
 import { CocktailRecipe } from '@/types/cocktail';
 import { Settings, Martini, Sparkles, Wand2 } from 'lucide-react';
@@ -30,6 +32,9 @@ const Index = () => {
   
   // Apply theme based on selected language
   useTheme(settings.language);
+
+  // Screensaver functionality
+  const { isScreensaverActive, resetScreensaver } = useScreensaver(settings.screensaverTimeout || 60);
 
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('menu');
   const [selectedCocktail, setSelectedCocktail] = useState<CocktailRecipe | null>(null);
@@ -156,6 +161,11 @@ const Index = () => {
         getIngredientName={getIngredientName}
         onConfirm={handleConfirmServing}
         onCancel={handleCancelServing}
+      />
+
+      <Screensaver 
+        isActive={isScreensaverActive}
+        onDismiss={resetScreensaver}
       />
     </div>
   );

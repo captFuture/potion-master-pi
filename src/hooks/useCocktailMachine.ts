@@ -94,6 +94,7 @@ const loadStoredSettings = (): AppSettings => {
           'coca_cola': false
         },
         pumpMapping: defaultPumpMapping,
+        screensaverTimeout: 60,
         ...parsedSettings
       };
     }
@@ -122,7 +123,8 @@ const loadStoredSettings = (): AppSettings => {
       'tonic_water': false,
       'coca_cola': false
     },
-    pumpMapping: defaultPumpMapping
+    pumpMapping: defaultPumpMapping,
+    screensaverTimeout: 60
   };
 };
 

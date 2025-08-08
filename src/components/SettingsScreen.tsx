@@ -192,9 +192,24 @@ export function SettingsScreen({
                   {option.label}
                 </Button>
               ))}
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="screensaver-timeout">Screensaver Timeout (seconds)</Label>
+            <Input
+              id="screensaver-timeout"
+              type="number"
+              min="10"
+              max="3600"
+              value={settings.screensaverTimeout || 60}
+              onChange={(e) => onUpdateSettings({ 
+                ...settings, 
+                screensaverTimeout: parseInt(e.target.value) || 60 
+              })}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
         <Separator />
 
