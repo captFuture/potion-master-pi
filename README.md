@@ -129,8 +129,28 @@ sudo update-initramfs -u
 
 ## 🎮 Verwendung
 
-### Services starten/stoppen
+### Entwicklungsmodus
+```bash
+# Beide Services in Entwicklungsmodus starten
+./scripts/dev-mode.sh
 
+# Oder einzeln starten
+cd hardware && npm run dev  # Hardware-Service auf Port 3001
+npm run dev                 # Frontend auf Port 8080
+```
+
+### Produktionsmodus
+```bash
+# Setup und Services starten
+./scripts/setup-pi.sh
+
+# Oder manuell
+npm run build
+sudo systemctl start cocktail-machine.service
+sudo systemctl start cocktail-kiosk.service
+```
+
+### Services verwalten
 ```bash
 # Hardware-Service
 sudo systemctl start cocktail-machine.service
@@ -146,11 +166,24 @@ sudo systemctl enable cocktail-machine.service
 sudo systemctl disable cocktail-kiosk.service
 ```
 
+### Hardware testen
+```bash
+# Alle Hardware-Komponenten testen
+./scripts/test-hardware.sh
+
+# Einzeln testen
+cd hardware
+npm run test-i2c    # I2C-Geräte scannen
+npm run test-scale  # Waage testen
+npm run test-relay  # Relais-Board testen
+```
+
 ### Web-Interface
 
-- **Lokal**: http://localhost:3000
-- **API Status**: http://localhost:3000/api/status
-- **WebSocket**: ws://localhost:3000
+- **Produktion**: http://localhost:3000
+- **Entwicklung**: http://localhost:8080  
+- **Hardware API**: http://localhost:3001/api/status
+- **WebSocket**: ws://localhost:3001
 
 ### Logs anzeigen
 
@@ -217,14 +250,21 @@ const PUMP_CHANNELS = {
 
 ## 🔄 Updates
 
-Das System aktualisiert sich automatisch bei jedem Neustart. Für manuelle Updates:
+Das System aktualisiert sich automatisch bei jedem Service-Neustart. Für manuelle Updates:
 
 ```bash
+# Update-Script verwenden
+./scripts/update-system.sh
+
+# Oder manuell
 cd /home/pi/potion-master-pi
 git pull origin main
+rm -rf node_modules package-lock.json
 npm install
 npm run build
+cd hardware && rm -rf node_modules && npm install
 sudo systemctl restart cocktail-machine.service
+sudo systemctl restart cocktail-kiosk.service
 ```
 
 ## 🐛 Troubleshooting

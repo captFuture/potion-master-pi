@@ -10,9 +10,9 @@
     "build-frontend": "cd .. && npm run build",
     "kiosk": "DISPLAY=:0 chromium-browser --kiosk --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-restore-session-state http://localhost:3000",
     "test-i2c": "node test-i2c.js",
-    "test-scale": "node test-scale.js",
+    "test-scale": "node test-scale.js", 
     "test-relay": "node test-relay.js",
-    "test-all": "node test-i2c.js && node test-scale.js && node test-relay.js"
+    "test-all": "npm run test-i2c && npm run test-scale && npm run test-relay"
   },
   "dependencies": {
     "express": "^4.18.2",

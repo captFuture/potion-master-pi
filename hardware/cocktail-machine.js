@@ -284,8 +284,9 @@ process.on('SIGINT', () => {
 });
 
 // Server starten
+const PORT = process.env.PORT || 3001;
 const machine = new CocktailMachine();
 global.machine = machine;
-machine.start();
+machine.start(PORT);
 
 module.exports = CocktailMachine;

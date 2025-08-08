@@ -1,19 +1,29 @@
 [Unit]
 Description=Cocktail Machine Hardware Controller
 After=network.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
 User=pi
+Group=pi
 WorkingDirectory=/home/pi/potion-master-pi/hardware
-ExecStartPre=/bin/bash -c 'cd /home/pi/potion-master-pi && git pull origin main && npm install && npm run build'
+ExecStartPre=/bin/bash -c 'cd /home/pi/potion-master-pi && git pull origin main && rm -rf node_modules package-lock.json && npm install && npm run build'
 ExecStart=/usr/bin/node cocktail-machine.js
 Restart=always
-RestartSec=10
+RestartSec=30
 Environment=NODE_ENV=production
+Environment=PORT=3001
 
 # Hardware access
 SupplementaryGroups=gpio i2c
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+# Resource limits
+LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
