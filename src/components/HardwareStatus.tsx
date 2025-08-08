@@ -1,7 +1,6 @@
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useHardware } from '@/hooks/useHardware';
-import { Wifi, WifiOff, Scale, Zap, Router } from 'lucide-react';
+import { Wifi, WifiOff, Scale, Zap, Router, Activity } from 'lucide-react';
 
 interface HardwareStatusProps {
   activePumps?: Set<number>;
@@ -21,98 +20,55 @@ export const HardwareStatus = ({ activePumps }: HardwareStatusProps) => {
     }
   };
 
+  // Get status colors using semantic tokens
+  const getStatusColor = (isOk: boolean) => {
+    return isOk ? 'text-success' : 'text-destructive';
+  };
+
+  const getOverallStatusColor = () => {
+    if (status.isConnected) return 'text-success';
+    if (status.wifiStatus) return 'text-warning';
+    return 'text-destructive';
+  };
+
   return (
-    <div className="flex flex-col gap-4 p-4 bg-card border border-card-border rounded-lg min-w-[280px]">
-      {/* Overall Status */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-foreground">Hardware Status</span>
-        <div className="flex items-center gap-2">
-          {status.isConnected ? (
-            <Wifi className="h-4 w-4 text-success" />
-          ) : (
-            <WifiOff className="h-4 w-4 text-destructive" />
-          )}
-          <Badge variant={status.isConnected ? "default" : status.wifiStatus ? "secondary" : "destructive"}>
-            {status.isConnected ? "Ready" : status.wifiStatus ? "Mock Mode" : "Offline"}
-          </Badge>
-        </div>
+    <div className="flex items-center gap-3">
+      {/* Overall Connection Status */}
+      <div className="flex items-center gap-1">
+        {status.isConnected ? (
+          <Wifi className={`h-4 w-4 ${getOverallStatusColor()}`} />
+        ) : (
+          <WifiOff className={`h-4 w-4 ${getOverallStatusColor()}`} />
+        )}
       </div>
 
-      {/* WiFi Status */}
-      <div className="flex items-center justify-between text-sm">
-        <div className="flex items-center gap-2">
-          <Router className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground">WiFi</span>
-        </div>
+      {/* I2C Devices Status */}
+      <div className="flex items-center gap-2">
+        <Activity className={`h-4 w-4 ${getStatusColor(status.relayStatus)}`} />
+        <Scale className={`h-4 w-4 ${getStatusColor(status.scaleStatus)}`} />
+      </div>
+
+      {/* Weight Display */}
+      <div className="flex items-center gap-2 text-sm">
+        <span className="font-mono text-foreground">{status.currentWeight.toFixed(1)}g</span>
+        <Button 
+          size="sm" 
+          variant="ghost" 
+          onClick={handleTareScale}
+          disabled={!status.isConnected}
+          className="h-6 px-2 text-xs"
+        >
+          Zero
+        </Button>
+      </div>
+
+      {/* Active Pumps Indicator */}
+      {displayActivePumps.size > 0 && (
         <div className="flex items-center gap-1">
-          <div className={`w-2 h-2 rounded-full ${status.wifiStatus ? 'bg-success' : 'bg-destructive'}`} />
-          <span className="text-xs">{status.wifiStatus ? 'Connected' : 'Offline'}</span>
+          <Zap className="h-4 w-4 text-success" />
+          <span className="text-xs text-muted-foreground">{displayActivePumps.size}</span>
         </div>
-      </div>
-
-      {/* I2C Device Status */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Relay (0x20)</span>
-          <div className="flex items-center gap-1">
-            <div className={`w-2 h-2 rounded-full ${status.relayStatus ? 'bg-success' : 'bg-destructive'}`} />
-            <span className="text-xs">{status.relayStatus ? 'OK' : 'ERROR'}</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">Scale (0x26)</span>
-          <div className="flex items-center gap-1">
-            <div className={`w-2 h-2 rounded-full ${status.scaleStatus ? 'bg-success' : 'bg-destructive'}`} />
-            <span className="text-xs">{status.scaleStatus ? 'OK' : 'ERROR'}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Scale Value and Tare */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Scale className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">{status.currentWeight.toFixed(1)}g</span>
-          </div>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={handleTareScale}
-            disabled={!status.isConnected}
-          >
-            Zero
-          </Button>
-        </div>
-      </div>
-
-      {/* Pump Status Indicators */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-foreground">Pumps</span>
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          {Array.from({ length: 8 }, (_, i) => i + 1).map(pumpNumber => {
-            const isActive = displayActivePumps.has(pumpNumber);
-            return (
-              <div 
-                key={pumpNumber}
-                className="flex flex-col items-center gap-1"
-              >
-                <div 
-                  className={`w-4 h-4 rounded-full border-2 transition-colors ${
-                    isActive 
-                      ? 'bg-success border-success shadow-lg shadow-success/30' 
-                      : 'bg-muted border-muted-foreground/20'
-                  }`}
-                />
-                <span className="text-xs text-muted-foreground">{pumpNumber}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      )}
     </div>
   );
 };
