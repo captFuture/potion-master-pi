@@ -27,11 +27,19 @@ sudo apt autoremove -y
 echo "📦 Installing essential packages..."
 sudo apt install -y git i2c-tools curl chromium-browser
 
-# Install Node.js from NodeSource
-if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
-    echo "📦 Installing Node.js and npm..."
+# Ensure Node.js 20.x LTS (avoid build issues on Pi)
+if ! command -v node &> /dev/null; then
+    CURRENT_MAJOR="none"
+else
+    CURRENT_MAJOR=$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo "unknown")
+fi
+
+if [ "$CURRENT_MAJOR" != "20" ]; then
+    echo "📦 Installing Node.js 20.x LTS..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt install -y nodejs
+    sudo apt-get install -y nodejs
+else
+    echo "✅ Node.js 20.x already installed"
 fi
 
 # Verify Node.js version
@@ -63,28 +71,32 @@ npm install
 echo ""
 echo "📦 Installing frontend dependencies and building..."
 cd "$PROJECT_ROOT"
-rm -rf node_modules package-lock.json dist
+rm -rf node_modules dist
 
-# Install with legacy peer deps to avoid conflicts
-npm install --legacy-peer-deps
+# Install dependencies without optional native binaries or postinstall scripts (stability on Pi)
+if ! NPM_CONFIG_IGNORE_OPTIONAL=1 NPM_CONFIG_IGNORE_SCRIPTS=1 npm ci; then
+    echo "⚠️ npm ci failed, falling back to npm install (still skipping optional/scripts)..."
+    NPM_CONFIG_IGNORE_OPTIONAL=1 NPM_CONFIG_IGNORE_SCRIPTS=1 npm install
+fi
 
-# Build with increased memory and ARM-compatible settings
-echo "🔨 Building with ARM optimizations..."
+# Build with safer settings for ARM
+echo "🔨 Building with ARM-safe settings (no minify, ES2020 target)..."
 export NODE_OPTIONS="--max-old-space-size=2048"
 export DISABLE_OPENCOLLECTIVE=1
 export ADBLOCK=1
 
-# Try building with fallback
-npm run build || {
-    echo "⚠️ Standard build failed, trying with compatibility mode..."
-    npx vite build --mode production --logLevel warn
-}
+# Try standard build first
+if ! npm run build; then
+    echo "⚠️ Standard build failed, trying Vite direct build with safer flags..."
+    npx vite build --mode production --logLevel warn --minify=false --target=es2020 || \
+    npx vite build --mode production --logLevel warn --minify=false --target=es2018 --force || true
+fi
 
 # Verify build
 if [ ! -d "dist" ]; then
     echo "❌ Build failed - dist directory not found"
-    echo "ℹ️ System will run in development mode only"
-    # Create minimal dist for service compatibility
+    echo "ℹ️ Running in development mode recommended on Pi: ./scripts/start-frontend.sh"
+    # Create minimal dist for compatibility
     mkdir -p dist
     echo "<html><body><h1>Development Mode</h1><p>Use npm run dev</p></body></html>" > dist/index.html
 else
