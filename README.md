@@ -204,7 +204,16 @@ Capture logs to a file if needed:
 
 1. **Mock mode**: Hardware service automatically runs in mock mode when I2C devices are not available
 2. **Port conflicts**: Hardware uses 3001, frontend development uses 8080
-3. **Build issues**: Run `npm install` in both root and hardware directories
+3. **Build issues (Raspberry Pi)**:
+   - Frontend should NOT install native I2C modules. We removed `i2c-bus` from the root to avoid `node-gyp` builds.
+   - Recommended: Node.js 20.x LTS on Pi for best compatibility.
+   - Refresh installs:
+     ```bash
+     # Root (frontend)
+     rm -rf node_modules package-lock.json && npm ci
+     # Hardware service
+     cd hardware && rm -rf node_modules && npm ci --no-audit && cd ..
+     ```
 
 ### Network Access
 
