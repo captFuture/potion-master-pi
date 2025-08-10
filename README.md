@@ -1,188 +1,144 @@
-# Potion Master Pi – Raspberry Pi 4 Cocktail Machine (Pi‑Safe esbuild)
+# Potion Master Pi – Raspberry Pi 4 Cocktail Machine (Static Frontend via Nginx)
 
-A React + Vite + TypeScript web UI with a Node.js hardware controller for mixing cocktails via I2C relays and an M5Stack MiniScale.
-
-- Touch-friendly UI with real-time weight
-- Manual startup scripts (no systemd needed)
-- Mock mode when hardware is not connected
-- Pi‑safe Vite startup using a locally compiled esbuild binary
+A React + Vite + TypeScript web UI shipped as static files built on your PC and served by Nginx on the Raspberry Pi. The Hardware API still runs on the Pi via Node.js.
 
 ---
 
-## Quick Fix (Illegal instruction on Pi 4)
+## Ziel: Stabiler Betrieb auf dem Raspberry Pi 4 ohne Vite/esbuild
 
-If `npm run dev` crashes instantly with "Illegal instruction", do this on your Pi 4:
-
-1) Install Go (required for esbuild from source)
-- sudo apt-get update && sudo apt-get install -y golang-go
-
-2) Build esbuild locally and force Vite to use it
-- bash ./scripts/build-esbuild-from-source.sh
-
-3) Start the frontend (uses ESBUILD_BINARY_PATH automatically)
-- bash ./scripts/start-frontend.sh
-
-4) Need verbose logs?
-- bash ./scripts/dev-verbose.sh
-  - Output is saved to vite-verbose.log
-
-If the issue reappears after dependency updates:
-- bash ./scripts/reinstall-deps.sh
-- bash ./scripts/build-esbuild-from-source.sh
-- bash ./scripts/start-frontend.sh
-
-Why this works: Some prebuilt esbuild arm64 binaries use newer ARM instructions not available on Raspberry Pi 4 (Cortex‑A72). Compiling on-device produces a compatible binary and we export ESBUILD_BINARY_PATH so Vite always uses it.
+- Frontend wird auf dem PC gebaut (Node 20 LTS)
+- Deploy per scp/ssh auf den Pi nach /opt/cocktail-machine/frontend
+- Auslieferung via Nginx (Systemdienst vorhanden)
+- Optionaler Kiosk-Modus (Chromium im Vollbild) als systemd Service
+- Hardware-API (Node/Express) bleibt unverändert – Start/Tests/Setup wie gehabt
 
 ---
 
-## Recommended OS for Raspberry Pi 4
+## Voraussetzungen
 
-- Raspberry Pi OS (64‑bit) Bookworm (e.g., 13 May 2025, kernel 6.12)
-- 64‑bit is strongly recommended for Node 20 LTS and modern toolchains
-- Verify: `uname -m` should print `aarch64`
+Auf dem PC:
+- Node.js 20.x LTS, npm
+- SSH-Zugang zum Pi (z. B. pi@<pi-ip>)
+
+Auf dem Pi:
+- Raspberry Pi OS 64‑bit (Bookworm empfohlen)
+- Nginx (wird vom Deploy-Script installiert, falls nicht vorhanden)
+- Chromium (für Kiosk-Modus)
 
 ---
 
-## Fresh Install on a Blank SD Card
+## 1) Frontend auf dem PC bauen
 
-1) Flash OS
-- Raspberry Pi Imager → Raspberry Pi OS (64‑bit) Bookworm
-- Pre-configure Wi‑Fi, SSH, user, etc.
-
-2) First boot and base system
 ```bash
-sudo apt update && sudo apt full-upgrade -y
-sudo reboot
+# Im Projektordner
+./scripts/build-frontend-pc.sh
+# Ergebnis liegt in ./dist
 ```
 
-3) Enable I2C
+---
+
+## 2) Deploy auf den Pi und Nginx konfigurieren
+
 ```bash
-sudo raspi-config nonint do_i2c 0 || true
-# or interactive via raspi-config UI
+# Syntax: ./scripts/deploy-frontend-to-pi.sh <PI_HOST> [PI_USER] [WEB_ROOT]
+./scripts/deploy-frontend-to-pi.sh 192.168.1.50 pi /opt/cocktail-machine/frontend
+
+# Das Script:
+# - kopiert ./dist auf den Pi
+# - installiert Nginx (falls fehlt)
+# - schreibt Site-Config /etc/nginx/sites-available/cocktail-frontend
+# - aktiviert Site und startet Nginx neu
+# - Auslieferung: http://<PI_HOST>/
 ```
 
-4) Install required packages
+Optionaler Test vom PC:
 ```bash
-sudo apt install -y git i2c-tools curl chromium-browser build-essential python3 make g++ pkg-config golang-go
+curl -I http://192.168.1.50/
 ```
 
-5) Install Node.js 20.x LTS (remove 22.x if present)
-```bash
-sudo apt purge -y nodejs npm || true
-sudo rm -f /etc/apt/sources.list.d/nodesource.list /etc/apt/sources.list.d/nodesource.list.d/*.list 2>/dev/null || true
-sudo apt autoremove -y || true
+---
 
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
+## 3) Hardware-API (unverändert)
 
-node -v  # v20.x.x
-npm -v
-```
-
-6) Clone the project
-```bash
-git clone https://github.com/captFuture/potion-master-pi.git
-cd potion-master-pi
-```
-
-7) Install hardware service dependencies (includes native i2c-bus)
-```bash
-cd hardware
-npm ci || npm install
-cd ..
-```
-
-8) Frontend deps and Pi‑safe esbuild
-```bash
-bash ./scripts/reinstall-deps.sh            # clean install, dedupe, remove nested esbuild under vite
-bash ./scripts/build-esbuild-from-source.sh # compile esbuild locally and verify
-```
-
-9) Start services
-- Hardware API (port 3001):
+Start (manuell):
 ```bash
 ./scripts/start-hardware.sh
 ```
-- Frontend (port 8080):
+
+Dev/Test (im Ordner hardware/):
 ```bash
-./scripts/start-frontend.sh
-```
-
-Open:
-- Hardware health: http://<Pi-IP>:3001/health
-- App UI: http://<Pi-IP>:8080
-
----
-
-## Scripts Overview
-
-- scripts/build-esbuild-from-source.sh
-  - Rebuild esbuild via Go on the Pi
-  - Removes nested esbuild under Vite so Node resolves the hoisted/local build
-  - Verifies the chosen binary and sets ESBUILD_BINARY_PATH via scripts/use-local-esbuild.sh
-
-- scripts/use-local-esbuild.sh
-  - Source this to export ESBUILD_BINARY_PATH to a working binary
-  - Used automatically by start scripts
-
-- scripts/start-frontend.sh
-  - Starts Vite directly via Node CLI with ESBUILD_BINARY_PATH in env
-  - Host/port: :: :8080
-
-- scripts/dev-verbose.sh
-  - Same as above with DEBUG and Node tracing; logs to vite-verbose.log
-
-- scripts/probe-esbuild.sh
-  - Lists esbuild binaries, probes require('esbuild') and minimal Vite create/close,
-    and executes binaries with --version to detect immediate crashes
-
-- scripts/reinstall-deps.sh
-  - Clean npm install with scripts enabled, dedupe, remove nested esbuild under Vite
-  - Rebuilds esbuild from source if Go is available
-
-- scripts/force-hoist-esbuild.sh
-  - Removes nested esbuild under Vite to force a single hoisted resolution
-
-- scripts/dev-mode.sh
-  - Starts hardware and frontend; sources ESBUILD_BINARY_PATH
-
----
-
-## Troubleshooting on Raspberry Pi
-
-Illegal instruction on `vite`
-- Ensure 64‑bit OS and Node 20 (see above)
-- Run:
-```bash
-sudo apt-get install -y golang-go
-bash ./scripts/build-esbuild-from-source.sh
-bash ./scripts/start-frontend.sh
-```
-
-`vite-verbose.log` is empty
-- Crash happens before Vite logs due to esbuild
-- Rebuild from source and ensure ESBUILD_BINARY_PATH is exported (start script handles this)
-
-Hardware build errors
-- Ensure build tools: `sudo apt install -y build-essential python3 make g++ pkg-config`
-- In hardware/: `rm -rf node_modules && npm ci || npm install`
-
-Ports in use
-- Hardware 3001, Frontend 8080 — change in scripts if needed
-
----
-
-## Development (non‑Pi)
-```bash
-# Frontend
-npm install
-npm run dev  # http://localhost:8080
-
-# Hardware (in hardware/)
 cd hardware
 npm install
-npm run dev  # http://localhost:3001
+npm run dev
 ```
+
+---
+
+## 4) Services installieren (optional)
+
+Installiert zwei Services: Hardware-API und Kiosk-Modus.
+
+```bash
+# Auf dem Pi, im Projektverzeichnis
+sudo ./scripts/install-services.sh -u pi
+
+# Autostart aktivieren (optional)
+sudo systemctl enable cocktail-hardware.service
+sudo systemctl enable cocktail-kiosk.service
+
+# Sofort starten
+sudo systemctl start cocktail-hardware.service
+sudo systemctl start cocktail-kiosk.service
+```
+
+- cocktail-hardware.service: startet ./scripts/start-hardware.sh
+- cocktail-kiosk.service: öffnet Chromium im Kiosk-Modus auf http://localhost/
+
+Deinstallation:
+```bash
+sudo ./scripts/uninstall-services.sh
+```
+
+---
+
+## 5) Kiosk-Startskript (angepasst)
+
+- Nutzt Nginx statt Vite-Preview
+- Startet bei Bedarf Hardware-Service (neuer Name oder Legacy)
+- Öffnet Chromium im Kiosk-Modus
+
+```bash
+./scripts/start-kiosk.sh
+```
+
+---
+
+## Typischer End-to-End Workflow
+
+1) Auf dem PC bauen: `./scripts/build-frontend-pc.sh`
+2) Auf den Pi deployen: `./scripts/deploy-frontend-to-pi.sh <PI_HOST> pi /opt/cocktail-machine/frontend`
+3) Hardware-API starten: `./scripts/start-hardware.sh` (oder Service aktivieren)
+4) Kiosk starten: `./scripts/start-kiosk.sh` (oder Service aktivieren)
+
+---
+
+## Hinweise & Fehlerbehebung
+
+- Wenn Nginx bereits einen Default-Site aktiv hat, wird diese vom Deploy-Script deaktiviert.
+- SPA-Routing: `try_files $uri /index.html` ist gesetzt.
+- Statische Assets unter /assets werden 30 Tage gecacht.
+- Chromium Kiosk erwartet eine laufende X/Wayland Session auf DISPLAY=:0.
+
+---
+
+## Development (PC)
+
+```bash
+npm install
+npm run dev  # lokale Entwicklung
+```
+
+Für den Pi wird kein Vite/Dev-Server mehr benötigt, Frontend kommt als statische Dateien.
 
 ---
 

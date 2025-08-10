@@ -1,0 +1,15 @@
+[Unit]
+Description=Chromium Kiosk for Cocktail Frontend (served by Nginx)
+After=graphical.target nginx.service network-online.target
+Wants=graphical.target nginx.service network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+Environment=DISPLAY=:0
+# Uses repo script to start kiosk (also ensures hardware service is up)
+ExecStart=/bin/bash __REPO_ROOT__/scripts/start-kiosk.sh
+Restart=on-failure
+
+[Install]
+WantedBy=graphical.target

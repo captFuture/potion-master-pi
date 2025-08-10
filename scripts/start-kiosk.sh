@@ -5,19 +5,27 @@ echo "====================="
 
 cd "$(dirname "$0")/.."
 
-# Check if hardware service is running
-if ! sudo systemctl is-active cocktail-machine.service --quiet; then
-    echo "🚀 Starting hardware service..."
-    sudo systemctl start cocktail-machine.service
-    sleep 5
+# Try to start hardware service (new name), fallback to legacy name
+if systemctl list-unit-files | grep -q '^cocktail-hardware.service'; then
+    if ! sudo systemctl is-active cocktail-hardware.service --quiet; then
+        echo "🚀 Starting hardware service (cocktail-hardware.service)..."
+        sudo systemctl start cocktail-hardware.service
+        sleep 3
+    fi
+else
+    if ! sudo systemctl is-active cocktail-machine.service --quiet; then
+        echo "🚀 Starting hardware service (cocktail-machine.service)..."
+        sudo systemctl start cocktail-machine.service
+        sleep 3
+    fi
 fi
 
-# Start the preview server in background
-echo "🌐 Starting web interface..."
-npm run preview -- --host 0.0.0.0 --port 3000 &
+# Ensure nginx is running (serving static frontend)
+echo "🌐 Ensuring Nginx is running..."
+sudo systemctl start nginx || true
 
-# Wait for server to start
-sleep 10
+# Wait a bit for nginx to be ready
+sleep 3
 
 # Launch browser in kiosk mode
 echo "🖥️ Launching kiosk browser..."
@@ -38,7 +46,4 @@ DISPLAY=:0 chromium-browser \
     --autoplay-policy=no-user-gesture-required \
     --disable-web-security \
     --touch-events=enabled \
-    http://localhost:3000
-
-# Kill background processes when browser closes
-pkill -f "npm run preview"
+    http://localhost/
