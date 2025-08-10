@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the source and destination directories
-SOURCE_DIR="/home/pi/potion-master-pi/dist/"
+SOURCE_DIR="/home/pi/potion-master-pi/dist"
 DEST_DIR="/var/www/potion-frontend-pi"
 
 echo "=========================================="
@@ -17,9 +17,10 @@ fi
 echo "✅ Source directory '$SOURCE_DIR' found."
 echo "------------------------------------------"
 
-# Step 1: Copy the directory to the Nginx web root
+# Step 1: Copy the contents of the source directory to the Nginx web root
 echo "🚀 Copying files from '$SOURCE_DIR' to '$DEST_DIR'..."
-sudo cp -r "$SOURCE_DIR" "$DEST_DIR"
+# The trailing slash on the source directory ensures only its contents are copied.
+sudo cp -r "$SOURCE_DIR/" "$DEST_DIR"
 
 if [ $? -eq 0 ]; then
     echo "✅ Files copied successfully."
