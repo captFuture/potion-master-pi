@@ -25,21 +25,25 @@ sudo apt autoremove -y
 
 # Install essential packages
 echo "📦 Installing essential packages..."
-sudo apt install -y git i2c-tools curl chromium-browser
+sudo apt install -y git i2c-tools curl chromium-browser build-essential python3 make g++ pkg-config
 
 # Ensure Node.js 20.x LTS (avoid build issues on Pi)
 if ! command -v node &> /dev/null; then
-    CURRENT_MAJOR="none"
+  CURRENT_MAJOR="none"
 else
-    CURRENT_MAJOR=$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo "unknown")
+  CURRENT_MAJOR=$(node -p "process.versions.node.split('.')[0]" 2>/dev/null || echo "unknown")
 fi
 
 if [ "$CURRENT_MAJOR" != "20" ]; then
-    echo "📦 Installing Node.js 20.x LTS..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+  echo "🧹 Removing existing Node.js and old NodeSource entries..."
+  sudo apt purge -y nodejs npm || true
+  sudo rm -f /etc/apt/sources.list.d/nodesource.list /etc/apt/sources.list.d/nodesource.list.d/*.list 2>/dev/null || true
+  sudo apt autoremove -y || true
+  echo "📦 Installing Node.js 20.x LTS..."
+  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+  sudo apt-get install -y nodejs
 else
-    echo "✅ Node.js 20.x already installed"
+  echo "✅ Node.js 20.x already installed"
 fi
 
 # Verify Node.js version
@@ -72,12 +76,10 @@ echo ""
 echo "📦 Installing frontend dependencies and building..."
 cd "$PROJECT_ROOT"
 rm -rf node_modules dist
+rm -f package-lock.json
 
 # Install dependencies without optional native binaries or postinstall scripts (stability on Pi)
-if ! NPM_CONFIG_IGNORE_OPTIONAL=1 NPM_CONFIG_IGNORE_SCRIPTS=1 npm ci; then
-    echo "⚠️ npm ci failed, falling back to npm install (still skipping optional/scripts)..."
-    NPM_CONFIG_IGNORE_OPTIONAL=1 NPM_CONFIG_IGNORE_SCRIPTS=1 npm install
-fi
+NPM_CONFIG_IGNORE_OPTIONAL=1 NPM_CONFIG_IGNORE_SCRIPTS=1 npm install
 
 # Build with safer settings for ARM
 echo "🔨 Building with ARM-safe settings (no minify, ES2020 target)..."
@@ -112,13 +114,16 @@ echo ""
 echo "🔧 Configuring system for hardware access..."
 
 # Enable I2C
+if command -v raspi-config >/dev/null 2>&1; then
+  sudo raspi-config nonint do_i2c 0 || true
+fi
 if ! grep -q "dtparam=i2c_arm=on" /boot/config.txt; then
-    echo "dtparam=i2c_arm=on" | sudo tee -a /boot/config.txt
+  echo "dtparam=i2c_arm=on" | sudo tee -a /boot/config.txt
 fi
 
 # Configure GPU memory split
 if ! grep -q "gpu_mem=128" /boot/config.txt; then
-    echo "gpu_mem=128" | sudo tee -a /boot/config.txt
+  echo "gpu_mem=128" | sudo tee -a /boot/config.txt
 fi
 
 # Test hardware
