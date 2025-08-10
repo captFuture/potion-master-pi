@@ -11,8 +11,8 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    // Disable lovable-tagger on ARM (e.g., Raspberry Pi) to avoid native crashes
+    mode === 'development' && process.arch === 'x64' && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
