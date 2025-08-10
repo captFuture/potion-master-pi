@@ -1,92 +1,73 @@
-# Potion Master Pi – Raspberry Pi 4 Cocktail Machine (Static Frontend via Nginx)
+# Potion Master Pi – Statisches Frontend über Nginx (Raspberry Pi 4)
 
-A React + Vite + TypeScript web UI shipped as static files built on your PC and served by Nginx on the Raspberry Pi. The Hardware API still runs on the Pi via Node.js.
-
----
-
-## Ziel: Stabiler Betrieb auf dem Raspberry Pi 4 ohne Vite/esbuild
-
-- Frontend wird auf dem PC gebaut (Node 20 LTS)
-- Deploy per scp/ssh auf den Pi nach /opt/cocktail-machine/frontend
-- Auslieferung via Nginx (Systemdienst vorhanden)
-- Optionaler Kiosk-Modus (Chromium im Vollbild) als systemd Service
-- Hardware-API (Node/Express) bleibt unverändert – Start/Tests/Setup wie gehabt
+Ziel: Frontend wird auf einem Windows 11 PC gebaut und manuell auf den Raspberry Pi kopiert. Der Pi liefert die Dateien mit Nginx aus. Die Hardware-API bleibt unverändert.
 
 ---
 
-## Voraussetzungen
+## 1) Build auf dem Windows 11 PC
 
-Auf dem PC:
-- Node.js 20.x LTS, npm
-- SSH-Zugang zum Pi (z. B. pi@<pi-ip>)
+Voraussetzungen: Node.js 20 LTS, npm
 
-Auf dem Pi:
-- Raspberry Pi OS 64‑bit (Bookworm empfohlen)
-- Nginx (wird vom Deploy-Script installiert, falls nicht vorhanden)
-- Chromium (für Kiosk-Modus)
+- Im Projektordner ausführen:
+  - npm ci
+  - npm run build
+- Ergebnis liegt in ./dist
+
+Kopiere anschließend den Inhalt von ./dist manuell auf den Raspberry Pi nach:
+- /home/pi/potion-frontent-pi
+
+Tipps zum Kopieren von Windows:
+- PowerShell (OpenSSH): scp -r .\dist\* pi@<pi-ip>:/home/pi/potion-frontent-pi/
+- Oder WinSCP verwenden (Zielordner: /home/pi/potion-frontent-pi)
 
 ---
 
-## 1) Frontend auf dem PC bauen
+## 2) Nginx auf dem Raspberry Pi installieren und aktivieren
+
+Auf dem Pi ausführen:
 
 ```bash
-# Im Projektordner
-./scripts/build-frontend-pc.sh
-# Ergebnis liegt in ./dist
+cd <projektverzeichnis>
+sudo chmod +x ./scripts/setup-nginx.sh
+sudo ./scripts/setup-nginx.sh /home/pi/potion-frontent-pi
 ```
 
----
+Das Script:
+- installiert Nginx (falls nicht vorhanden)
+- konfiguriert eine Site, die /home/pi/potion-frontent-pi als Root nutzt
+- aktiviert die Site, deaktiviert die Default-Site
+- testet die Config und startet Nginx neu
+- aktiviert Autostart (systemctl enable nginx)
 
-## 2) Deploy auf den Pi und Nginx konfigurieren
+Danach erreichbar unter: http://<pi-ip>/
 
-```bash
-# Syntax: ./scripts/deploy-frontend-to-pi.sh <PI_HOST> [PI_USER] [WEB_ROOT]
-./scripts/deploy-frontend-to-pi.sh 192.168.1.50 pi /opt/cocktail-machine/frontend
-
-# Das Script:
-# - kopiert ./dist auf den Pi
-# - installiert Nginx (falls fehlt)
-# - schreibt Site-Config /etc/nginx/sites-available/cocktail-frontend
-# - aktiviert Site und startet Nginx neu
-# - Auslieferung: http://<PI_HOST>/
-```
-
-Optionaler Test vom PC:
-```bash
-curl -I http://192.168.1.50/
-```
+Update des Frontends: Dateien erneut nach /home/pi/potion-frontent-pi kopieren, dann optional sudo systemctl reload nginx.
 
 ---
 
 ## 3) Hardware-API (unverändert)
 
-Start (manuell):
-```bash
-./scripts/start-hardware.sh
-```
-
-Dev/Test (im Ordner hardware/):
-```bash
-cd hardware
-npm install
-npm run dev
-```
+- Start: ./scripts/start-hardware.sh
+- Tests (im Ordner hardware/):
+  - npm install
+  - npm run dev
+  - npm run test-i2c, npm run test-relay, npm run test-scale
 
 ---
 
-## 4) Services installieren (optional)
+## 4) Optionale Services (inkl. Chromium Kiosk)
 
-Installiert zwei Services: Hardware-API und Kiosk-Modus.
+Systemd-Services können installiert werden, sind aber optional.
 
 ```bash
 # Auf dem Pi, im Projektverzeichnis
 sudo ./scripts/install-services.sh -u pi
 
-# Autostart aktivieren (optional)
+# Autostart (optional)
 sudo systemctl enable cocktail-hardware.service
 sudo systemctl enable cocktail-kiosk.service
 
-# Sofort starten
+# Starten
 sudo systemctl start cocktail-hardware.service
 sudo systemctl start cocktail-kiosk.service
 ```
@@ -94,53 +75,11 @@ sudo systemctl start cocktail-kiosk.service
 - cocktail-hardware.service: startet ./scripts/start-hardware.sh
 - cocktail-kiosk.service: öffnet Chromium im Kiosk-Modus auf http://localhost/
 
-Deinstallation:
-```bash
-sudo ./scripts/uninstall-services.sh
-```
-
 ---
 
-## 5) Kiosk-Startskript (angepasst)
+## 5) Projekt-Hinweise
 
-- Nutzt Nginx statt Vite-Preview
-- Startet bei Bedarf Hardware-Service (neuer Name oder Legacy)
-- Öffnet Chromium im Kiosk-Modus
+- Frontend-Build findet ausschließlich auf dem PC statt; auf dem Pi wird nichts mit Vite/esbuild kompiliert.
+- Statische Auslieferung über Nginx mit SPA-Fallback und Asset-Caching.
 
-```bash
-./scripts/start-kiosk.sh
-```
-
----
-
-## Typischer End-to-End Workflow
-
-1) Auf dem PC bauen: `./scripts/build-frontend-pc.sh`
-2) Auf den Pi deployen: `./scripts/deploy-frontend-to-pi.sh <PI_HOST> pi /opt/cocktail-machine/frontend`
-3) Hardware-API starten: `./scripts/start-hardware.sh` (oder Service aktivieren)
-4) Kiosk starten: `./scripts/start-kiosk.sh` (oder Service aktivieren)
-
----
-
-## Hinweise & Fehlerbehebung
-
-- Wenn Nginx bereits einen Default-Site aktiv hat, wird diese vom Deploy-Script deaktiviert.
-- SPA-Routing: `try_files $uri /index.html` ist gesetzt.
-- Statische Assets unter /assets werden 30 Tage gecacht.
-- Chromium Kiosk erwartet eine laufende X/Wayland Session auf DISPLAY=:0.
-
----
-
-## Development (PC)
-
-```bash
-npm install
-npm run dev  # lokale Entwicklung
-```
-
-Für den Pi wird kein Vite/Dev-Server mehr benötigt, Frontend kommt als statische Dateien.
-
----
-
-## License
-MIT
+Lizenz: MIT
