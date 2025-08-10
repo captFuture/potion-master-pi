@@ -18,7 +18,7 @@ async function testScale() {
     // Prüfen ob Gerät antwortet
     try {
       bus.receiveByteSync(SCALE_ADDRESS);
-      console.log('✅ M5Stack MiniScale responds at address v');
+      console.log('✅ M5Stack MiniScale responds at address 0x26');
     } catch (error) {
       console.log('❌ No response from M5Stack MiniScale at address 0x26');
       throw new Error('Scale not found');

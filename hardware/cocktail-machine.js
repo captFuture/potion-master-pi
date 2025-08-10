@@ -134,7 +134,7 @@ class CocktailMachine {
           // Read current state first to preserve other relays
           let currentState;
           try {
-            currentState = this.i2cBus.receiveByteSync(this.relayAddress);
+            currentState = this.readRelayState();
           } catch (error) {
             // If read fails, assume all relays are OFF (0xFF)
             currentState = 0xFF;
@@ -143,7 +143,7 @@ class CocktailMachine {
           // Set the specific bit to 0 (activate relay)
           const activeMask = currentState & ~(1 << bitPosition);
           
-          this.i2cBus.writeByteSync(this.relayAddress, activeMask);
+          this.writeRelayState(activeMask);
           console.log(`✅ Pump ${pumpNumber} activated - bit ${bitPosition} set to 0 (mask: 0x${activeMask.toString(16).padStart(2, '0').toUpperCase()})`);
         }
         
@@ -153,14 +153,14 @@ class CocktailMachine {
               // Read current state and set the specific bit to 1 (deactivate relay)
               let currentState;
               try {
-                currentState = this.i2cBus.receiveByteSync(this.relayAddress);
+                currentState = this.readRelayState();
               } catch (error) {
                 currentState = 0xFF;
               }
               
               const bitPosition = pumpNumber - 1;
               const deactiveMask = currentState | (1 << bitPosition);
-              this.i2cBus.writeByteSync(this.relayAddress, deactiveMask);
+              this.writeRelayState(deactiveMask);
               console.log(`🛑 Pump ${pumpNumber} deactivated - bit ${bitPosition} set to 1 (mask: 0x${deactiveMask.toString(16).padStart(2, '0').toUpperCase()})`);
             }
             this.activePumps.delete(pumpNumber);
@@ -244,7 +244,7 @@ class CocktailMachine {
     
     try {
       // Initialize all relays to OFF state
-      this.i2cBus.writeByteSync(this.relayAddress, 0xFF);
+       this.writeRelayState(0xFF);
       console.log('✅ Relay board initialized (all pumps OFF)');
     } catch (error) {
       console.error('❌ Relay board initialization failed:', error);
@@ -271,6 +271,20 @@ class CocktailMachine {
     } catch (error) {
       return false;
     }
+  }
+
+  // Relay helpers for PCF8574 (single byte write/read)
+  writeRelayState(state) {
+    if (this.mockMode) return;
+    const buf = Buffer.from([state & 0xFF]);
+    this.i2cBus.i2cWriteSync(this.relayAddress, 1, buf);
+  }
+
+  readRelayState() {
+    if (this.mockMode) return 0xFF;
+    const buf = Buffer.alloc(1);
+    this.i2cBus.i2cReadSync(this.relayAddress, 1, buf);
+    return buf[0];
   }
 
   // Get comprehensive hardware status
