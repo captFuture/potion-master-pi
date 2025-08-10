@@ -17,12 +17,7 @@ Steps:
 2. The build output is in ./dist
 
 Copy to the Pi (after you set up the Pi below):
-- Directly into the Nginx webroot (created by the setup script):
-  - scp -r .\dist\* pi@<pi-ip>:/var/www/potion-frontend-pi/
-
-If you cannot write into /var/www directly, copy to your home and move on the Pi:
-- scp -r .\dist\* pi@<pi-ip>:/home/pi/potion-frontend-pi/
-- ssh pi@<pi-ip> "sudo mkdir -p /var/www/potion-frontend-pi && sudo rsync -a --delete /home/pi/potion-frontend-pi/ /var/www/potion-frontend-pi/"
+- sudo ./potion-master-pi/scripts/copy_pcfiles.sh
 
 ---
 
