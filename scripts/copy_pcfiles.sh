@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the source and destination directories
-SOURCE_DIR="/home/pi/potion-master-pi/dist"
+SOURCE_DIR="/home/pi/potion-master-pi/dist/"
 DEST_DIR="/var/www/potion-frontend-pi"
 
 echo "=========================================="
