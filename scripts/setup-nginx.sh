@@ -3,10 +3,10 @@ set -euo pipefail
 
 # Setup and enable Nginx to serve the static frontend on Raspberry Pi
 # Usage:
-#   sudo ./scripts/setup-nginx.sh [/home/pi/potion-frontent-pi]
-# Default doc root: /home/pi/potion-frontent-pi
+#   sudo ./scripts/setup-nginx.sh [/home/pi/potion-frontend-pi]
+# Default doc root: /home/pi/potion-frontend-pi
 
-WEB_ROOT=${1:-/home/pi/potion-frontent-pi}
+WEB_ROOT=${1:-/home/pi/potion-frontend-pi}
 SITE_NAME="potion-frontend"
 SITE_PATH="/etc/nginx/sites-available/${SITE_NAME}"
 ENABLED_LINK="/etc/nginx/sites-enabled/${SITE_NAME}"
