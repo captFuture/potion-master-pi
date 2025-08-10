@@ -10,6 +10,9 @@ cd "$(dirname "$0")/.."
 PROJECT_ROOT="$(pwd)"
 echo "📁 Project root: $PROJECT_ROOT"
 
+# Ensure permissions are correct
+bash ./scripts/fix-permissions.sh || true
+
 # Update system packages
 echo ""
 echo "📦 Updating system packages..."
@@ -40,11 +43,9 @@ echo ""
 echo "👤 Adding user to gpio and i2c groups..."
 sudo usermod -a -G gpio,i2c $USER
 
-# Stop existing services
+# Manual mode - no services to manage
 echo ""
-echo "🛑 Stopping existing services..."
-sudo systemctl stop cocktail-machine.service 2>/dev/null || true
-sudo systemctl stop cocktail-kiosk.service 2>/dev/null || true
+echo "🛑 Skipping system service management (manual mode)"
 
 # Update from git
 echo ""
@@ -90,15 +91,9 @@ else
     echo "✅ Frontend build successful"
 fi
 
-# Install system services
+# Manual mode - no system service installation
 echo ""
-echo "⚙️ Installing system services..."
-sudo cp scripts/cocktail-machine.service /etc/systemd/system/
-sudo cp scripts/cocktail-kiosk.service /etc/systemd/system/
-
-# Reload and enable services
-sudo systemctl daemon-reload
-sudo systemctl enable cocktail-machine.service
+echo "⚙️ Skipping system service installation (manual mode)"
 
 # Configure system for hardware access
 echo ""
@@ -121,25 +116,12 @@ cd hardware
 echo "Running I2C scan..."
 npm run test-i2c || echo "⚠️ I2C test failed - hardware may not be connected (will run in mock mode)"
 
-# Start hardware service
+# Manual start instructions
 echo ""
-echo "🚀 Starting hardware service..."
-cd "$PROJECT_ROOT"
-sudo systemctl start cocktail-machine.service
+echo "🚀 Setup complete! Start services manually when ready:"
+echo "  Hardware:   ./scripts/start-hardware.sh"
+echo "  Frontend:   ./scripts/start-frontend.sh"
 
-# Wait for service to start
-echo "⏳ Waiting for hardware service to start..."
-sleep 5
-
-# Check service status
-echo ""
-echo "📊 Service Status:"
-if sudo systemctl is-active cocktail-machine.service --quiet; then
-    echo "✅ Hardware service running"
-else
-    echo "❌ Hardware service failed - checking logs..."
-    sudo journalctl -u cocktail-machine.service --no-pager -n 10
-fi
 
 echo ""
 echo "✅ Setup complete!"
@@ -154,11 +136,11 @@ echo "   Hardware API: http://localhost:3001/health"
 echo "   Hardware Status: http://localhost:3001/api/status"
 echo ""
 echo "🛠️ Useful Commands:"
-echo "   Check hardware logs: sudo journalctl -u cocktail-machine.service -f"
-echo "   Restart hardware: sudo systemctl restart cocktail-machine.service"
-echo "   Test hardware: cd hardware && npm run test-all"
-echo "   Start development: npm run dev"
-echo "   Update system: scripts/update-system.sh"
+echo "   Start hardware:   ./scripts/start-hardware.sh"
+echo "   Start frontend:   ./scripts/start-frontend.sh"
+echo "   Run tests:        ./scripts/test-hardware.sh"
+echo "   Dev mode (both):  ./scripts/dev-mode.sh"
+echo "   Update system:    ./scripts/update-system.sh"
 echo ""
 echo "📝 Note: Hardware will run in mock mode if I2C devices are not connected."
 echo "📝 Reboot may be required for I2C changes to take effect."

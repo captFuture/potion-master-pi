@@ -9,7 +9,7 @@ A React-based web interface for controlling a Raspberry Pi cocktail mixing machi
 - 🔌 8-channel relay control for pumps
 - 📱 Touch-friendly responsive interface
 - 🎮 Hardware abstraction with mock mode for development
-- 🚀 Production-ready systemd services
+- 🚀 Simple manual start scripts (no systemd required)
 
 ## Hardware Requirements
 
@@ -23,17 +23,25 @@ A React-based web interface for controlling a Raspberry Pi cocktail mixing machi
 
 ### On Raspberry Pi
 
-1. **Clone and setup:**
+1. Clone and setup prerequisites:
    ```bash
    git clone <repository-url> potion-master-pi
    cd potion-master-pi
-   chmod +x scripts/setup-pi.sh
    ./scripts/setup-pi.sh
    ```
 
-2. **Access the interface:**
-   - Hardware API: http://localhost:3001
-   - Web interface: Start with `npm run dev` or `scripts/start-kiosk.sh`
+2. Start services manually:
+   ```bash
+   # Terminal 1 – Hardware API (port 3001)
+   ./scripts/start-hardware.sh
+
+   # Terminal 2 – Frontend (Vite dev server on port 8080)
+   ./scripts/start-frontend.sh
+   ```
+
+3. Access the interface:
+   - Hardware API: http://localhost:3001/health
+   - Web interface: http://localhost:8080
 
 ### Development (Any Platform)
 
@@ -68,11 +76,11 @@ potion-master-pi/
 │   ├── test-*.js          # Hardware test scripts
 │   └── package.json       # Hardware dependencies
 ├── scripts/               # Setup and utility scripts
-│   ├── setup-pi.sh        # Full Pi setup script
-│   ├── update-system.sh   # Update and restart
-│   ├── dev-mode.sh        # Development mode
-│   ├── start-kiosk.sh     # Kiosk mode launcher
-│   └── *.service          # Systemd service files
+│   ├── setup-pi.sh        # Full Pi setup (no services)
+│   ├── update-system.sh   # Update code and rebuild
+│   ├── dev-mode.sh        # Start both (dev)
+│   ├── start-hardware.sh  # Start hardware API (manual)
+│   └── start-frontend.sh  # Start frontend (manual)
 └── dist/                  # Built frontend (after npm run build)
 ```
 
@@ -129,16 +137,13 @@ Pumps are numbered 0-7 and mapped to ingredients in `src/data/pump_mapping.json`
 
 ## Available Scripts
 
-### Production Scripts
+### Utility Scripts
 
-- `scripts/setup-pi.sh` - Complete Raspberry Pi setup
-- `scripts/update-system.sh` - Update code and restart services
-- `scripts/start-kiosk.sh` - Start in kiosk mode
-
-### Development Scripts
-
-- `scripts/dev-mode.sh` - Start both services in development
+- `scripts/start-hardware.sh` - Start hardware API (manual)
+- `scripts/start-frontend.sh` - Start frontend (manual)
 - `scripts/test-hardware.sh` - Test all hardware components
+- `scripts/dev-mode.sh` - Start both services in development
+- `scripts/update-system.sh` - Update code and rebuild
 
 ### Hardware Scripts (in hardware/ directory)
 
@@ -153,34 +158,19 @@ Pumps are numbered 0-7 and mapped to ingredients in `src/data/pump_mapping.json`
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 
-## System Services
+## Manual Start & Logs
 
-When installed on Raspberry Pi, the system runs as systemd services:
-
-### cocktail-machine.service
-
-- Runs the hardware controller
-- Auto-starts on boot
-- Restarts on failure
-- Logs to systemd journal
-
-### cocktail-kiosk.service (optional)
-
-- Runs the web interface in kiosk mode
-- Depends on hardware service
-- Auto-starts in graphical mode
-
-**Service Commands:**
+Start both processes in separate terminals:
 ```bash
-# Check status
-sudo systemctl status cocktail-machine.service
-
-# View logs
-sudo journalctl -u cocktail-machine.service -f
-
-# Restart service
-sudo systemctl restart cocktail-machine.service
+./scripts/start-hardware.sh    # Hardware API (port 3001)
+./scripts/start-frontend.sh    # Frontend (port 8080)
 ```
+
+Capture logs to a file if needed:
+```bash
+./scripts/start-hardware.sh | tee hardware.log
+```
+
 
 ## Troubleshooting
 
@@ -195,14 +185,13 @@ sudo systemctl restart cocktail-machine.service
    sudo i2cdetect -y 1
    ```
 
-2. **Service won't start:**
+2. **Hardware won't start:**
    ```bash
-   # Check logs
-   sudo journalctl -u cocktail-machine.service -n 50
-   
-   # Test hardware manually
-   cd hardware && npm run test-all
+   ./scripts/start-hardware.sh
    ```
+   - Check console output for errors
+   - Verify I2C devices: `sudo i2cdetect -y 1`
+   - Run tests: `./scripts/test-hardware.sh`
 
 3. **Permissions error:**
    ```bash

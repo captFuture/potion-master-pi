@@ -17,10 +17,8 @@ if [[ "${1:-}" == "--force" ]]; then
   FORCE=1
 fi
 
-# Stop services
-echo "Stopping services..."
-sudo systemctl stop cocktail-kiosk.service 2>/dev/null || true
-sudo systemctl stop cocktail-machine.service 2>/dev/null || true
+# Manual mode - no services to stop
+echo "Skipping service control (manual mode: no systemd services)"
 
 # Update from git with safety around local changes
 echo "Updating from git..."
@@ -67,25 +65,13 @@ if ! npm run build; then
   node --max-old-space-size=2048 ./node_modules/.bin/vite build --mode production --logLevel warn || true
 fi
 
-# Reload services configuration
-echo "Reloading service configuration..."
-sudo systemctl daemon-reload
-
-# Restart hardware service
-echo "Starting hardware service..."
-sudo systemctl start cocktail-machine.service
-
-# Wait and check status
-sleep 5
-if sudo systemctl is-active cocktail-machine.service --quiet; then
-  echo "✅ Hardware service running"
-else
-  echo "❌ Hardware service failed - check logs:"
-  sudo journalctl -u cocktail-machine.service --no-pager -n 50
-  exit 1
-fi
-
 echo ""
-echo "✅ System updated and restarted!"
-echo "Hardware API: http://localhost:3001/health"
-echo "Check status: sudo systemctl status cocktail-machine.service"
+echo "✅ System updated!"
+echo ""
+echo "Next steps (manual start):"
+echo "  - Hardware:   ./scripts/start-hardware.sh"
+echo "  - Frontend:   ./scripts/start-frontend.sh"
+echo ""
+echo "Tips:"
+echo "  - Run tests:  ./scripts/test-hardware.sh"
+echo "  - Build app:  npm run build && npm run preview"
