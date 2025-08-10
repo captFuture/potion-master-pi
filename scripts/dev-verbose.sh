@@ -19,9 +19,11 @@ if [ -d node_modules/@swc/core ]; then ls -la node_modules/@swc/core || true; fi
 
 # Enable very verbose logging
 export NODE_OPTIONS="${NODE_OPTIONS:-} --trace-uncaught --unhandled-rejections=strict"
-export DEBUG=vite:* 
+export DEBUG=vite:*,esbuild:*
 
 # Start Vite with full debug and tee output to a log file
 echo "\n=== Starting Vite in verbose mode ==="
+# shellcheck disable=SC1091
+source ./scripts/use-local-esbuild.sh || true
 set -x
-node ./node_modules/vite/bin/vite.js --debug --logLevel debug 2>&1 | tee vite-verbose.log
+node ./node_modules/vite/bin/vite.js --debug --logLevel debug --host :: --port 8080 2>&1 | tee vite-verbose.log

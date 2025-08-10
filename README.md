@@ -1,27 +1,53 @@
-# Potion Master Pi – Raspberry Pi 4 Cocktail Machine
+# Potion Master Pi – Raspberry Pi 4 Cocktail Machine (Pi‑Safe esbuild)
 
 A React + Vite + TypeScript web UI with a Node.js hardware controller for mixing cocktails via I2C relays and an M5Stack MiniScale.
 
 - Touch-friendly UI with real-time weight
 - Manual startup scripts (no systemd needed)
 - Mock mode when hardware is not connected
+- Pi‑safe Vite startup using a locally compiled esbuild binary
+
+---
+
+## Quick Fix (Illegal instruction on Pi 4)
+
+If `npm run dev` crashes instantly with "Illegal instruction", do this on your Pi 4:
+
+1) Install Go (required for esbuild from source)
+- sudo apt-get update && sudo apt-get install -y golang-go
+
+2) Build esbuild locally and force Vite to use it
+- bash ./scripts/build-esbuild-from-source.sh
+
+3) Start the frontend (uses ESBUILD_BINARY_PATH automatically)
+- bash ./scripts/start-frontend.sh
+
+4) Need verbose logs?
+- bash ./scripts/dev-verbose.sh
+  - Output is saved to vite-verbose.log
+
+If the issue reappears after dependency updates:
+- bash ./scripts/reinstall-deps.sh
+- bash ./scripts/build-esbuild-from-source.sh
+- bash ./scripts/start-frontend.sh
+
+Why this works: Some prebuilt esbuild arm64 binaries use newer ARM instructions not available on Raspberry Pi 4 (Cortex‑A72). Compiling on-device produces a compatible binary and we export ESBUILD_BINARY_PATH so Vite always uses it.
 
 ---
 
 ## Recommended OS for Raspberry Pi 4
 
-- Use Raspberry Pi OS (64‑bit) Bookworm. Yes, the 13 May 2025 release with kernel 6.12 is suitable.
-- Why 64‑bit: better compatibility with Node.js 20 LTS, Vite toolchain, Chromium, and fewer “Illegal instruction” issues than 32‑bit.
-
-Check your arch after install: `uname -m` should print `aarch64`.
+- Raspberry Pi OS (64‑bit) Bookworm (e.g., 13 May 2025, kernel 6.12)
+- 64‑bit is strongly recommended for Node 20 LTS and modern toolchains
+- Verify: `uname -m` should print `aarch64`
 
 ---
 
-## Blank SD Card Setup (Fresh Install)
+## Fresh Install on a Blank SD Card
 
 1) Flash OS
-- Raspberry Pi Imager → Raspberry Pi OS (64‑bit) Bookworm (Desktop or Lite)
-- Pre-configure hostname, user, password, locale, Wi‑Fi, and enable SSH if desired
+- Raspberry Pi Imager → Raspberry Pi OS (64‑bit) Bookworm
+- Pre-configure Wi‑Fi, SSH, user, etc.
 
 2) First boot and base system
 ```bash
@@ -31,28 +57,25 @@ sudo reboot
 
 3) Enable I2C
 ```bash
-# Non-interactive (preferred in scripts)
 sudo raspi-config nonint do_i2c 0 || true
-# or interactive: sudo raspi-config → Interface Options → I2C → Enable
+# or interactive via raspi-config UI
 ```
 
-4) Install required packages (build tools + Chromium for kiosk/dev)
+4) Install required packages
 ```bash
-sudo apt install -y git i2c-tools curl chromium-browser build-essential python3 make g++ pkg-config
+sudo apt install -y git i2c-tools curl chromium-browser build-essential python3 make g++ pkg-config golang-go
 ```
 
 5) Install Node.js 20.x LTS (remove 22.x if present)
 ```bash
-# Remove existing Node.js and potential NodeSource 22.x list
 sudo apt purge -y nodejs npm || true
 sudo rm -f /etc/apt/sources.list.d/nodesource.list /etc/apt/sources.list.d/nodesource.list.d/*.list 2>/dev/null || true
 sudo apt autoremove -y || true
 
-# Add NodeSource 20.x and install
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
-node -v  # should be v20.x.x
+node -v  # v20.x.x
 npm -v
 ```
 
@@ -69,157 +92,87 @@ npm ci || npm install
 cd ..
 ```
 
-8) Install frontend dependencies (skip native/optional postinstalls)
+8) Frontend deps and Pi‑safe esbuild
 ```bash
-rm -rf node_modules dist && rm -f package-lock.json
-NPM_CONFIG_IGNORE_OPTIONAL=1 NPM_CONFIG_IGNORE_SCRIPTS=1 npm install
+bash ./scripts/reinstall-deps.sh            # clean install, dedupe, remove nested esbuild under vite
+bash ./scripts/build-esbuild-from-source.sh # compile esbuild locally and verify
 ```
 
-9) Build frontend with ARM-safe flags (fallback preserves compatibility)
-```bash
-export NODE_OPTIONS="--max-old-space-size=2048"
-export DISABLE_OPENCOLLECTIVE=1
-export ADBLOCK=1
-
-npm run build \
-  || npx vite build --mode production --logLevel warn --minify=false --target=es2020 \
-  || npx vite build --mode production --logLevel warn --minify=false --target=es2018 --force
-```
-
-If the build still fails, you can run in development mode (see below).
-
----
-
-## One-Command Setup (on Pi)
-
-You can run our scripted version of the steps above:
-```bash
-./scripts/setup-pi.sh
-```
-What it does:
-- Ensures build tools and Node.js 20.x
-- Installs hardware deps (native i2c-bus)
-- Installs frontend deps without optional/native postinstalls
-- Builds with ARM-safe flags and provides a dev-mode fallback
-- Enables I2C via raspi-config and config.txt
-
----
-
-## Starting the Apps (Manual, no services)
-
+9) Start services
 - Hardware API (port 3001):
 ```bash
 ./scripts/start-hardware.sh
 ```
-
-- Frontend (Vite dev, port 8080):
+- Frontend (port 8080):
 ```bash
 ./scripts/start-frontend.sh
 ```
 
-- Dev mode (both in one):
-```bash
-./scripts/dev-mode.sh
-```
-
 Open:
-- Hardware health: http://localhost:3001/health
-- App UI: http://localhost:8080
+- Hardware health: http://<Pi-IP>:3001/health
+- App UI: http://<Pi-IP>:8080
+
+---
+
+## Scripts Overview
+
+- scripts/build-esbuild-from-source.sh
+  - Rebuild esbuild via Go on the Pi
+  - Removes nested esbuild under Vite so Node resolves the hoisted/local build
+  - Verifies the chosen binary and sets ESBUILD_BINARY_PATH via scripts/use-local-esbuild.sh
+
+- scripts/use-local-esbuild.sh
+  - Source this to export ESBUILD_BINARY_PATH to a working binary
+  - Used automatically by start scripts
+
+- scripts/start-frontend.sh
+  - Starts Vite directly via Node CLI with ESBUILD_BINARY_PATH in env
+  - Host/port: :: :8080
+
+- scripts/dev-verbose.sh
+  - Same as above with DEBUG and Node tracing; logs to vite-verbose.log
+
+- scripts/probe-esbuild.sh
+  - Lists esbuild binaries, probes require('esbuild') and minimal Vite create/close,
+    and executes binaries with --version to detect immediate crashes
+
+- scripts/reinstall-deps.sh
+  - Clean npm install with scripts enabled, dedupe, remove nested esbuild under Vite
+  - Rebuilds esbuild from source if Go is available
+
+- scripts/force-hoist-esbuild.sh
+  - Removes nested esbuild under Vite to force a single hoisted resolution
+
+- scripts/dev-mode.sh
+  - Starts hardware and frontend; sources ESBUILD_BINARY_PATH
 
 ---
 
 ## Troubleshooting on Raspberry Pi
 
-1) “Illegal instruction” when building or running Vite/@swc/esbuild
-- Verify 64‑bit OS (aarch64): `uname -m`
-- Ensure Node 20.x LTS: `node -v`; if not 20, reinstall as above
-- Reinstall frontend deps without optional/native binaries:
+Illegal instruction on `vite`
+- Ensure 64‑bit OS and Node 20 (see above)
+- Run:
 ```bash
-rm -rf node_modules package-lock.json
-NPM_CONFIG_IGNORE_OPTIONAL=1 NPM_CONFIG_IGNORE_SCRIPTS=1 npm install
-```
-- Build with our safer targets (see build command above)
-
-2) i2c-bus / node-gyp build errors (hardware directory)
-- Make sure build tools are installed: `sudo apt install -y build-essential python3 make g++ pkg-config`
-- Clean and reinstall in hardware/: `rm -rf node_modules && npm ci || npm install`
-
-3) No I2C devices found
-```bash
-sudo raspi-config nonint do_i2c 0 || true
-sudo i2cdetect -y 1
-```
-Expected addresses:
-- Relay board: 0x20
-- M5Stack MiniScale: 0x26
-
-4) Frontend fails to build but dev server works
-- Use dev mode: `./scripts/start-frontend.sh`
-- You can still access the UI at http://localhost:8080
-
-5) Ports already in use
-- Hardware: 3001, Frontend dev: 8080
-- Kill conflicting processes or choose alternative ports in scripts
-
----
-
-## Features
-
-- 🍹 Interactive cocktail selection and mixing
-- ⚖️ Real-time weight monitoring with M5Stack MiniScale
-- 🔌 8-channel relay control for pumps
-- 📱 Responsive, touch-friendly interface
-- 🎮 Hardware mock mode for development
-- 🚀 Manual start scripts (no systemd)
-
----
-
-## Project Structure
-
-```
-potion-master-pi/
-├── src/                     # React frontend
-│   ├── components/          # UI components
-│   ├── hooks/               # Custom hooks
-│   ├── services/            # API services
-│   ├── data/                # Cocktail & ingredient data
-│   └── pages/               # Routes
-├── hardware/                # Hardware controller (Node + I2C)
-│   ├── cocktail-machine.js  # Main hardware service
-│   ├── test-*.js            # Hardware test scripts
-│   └── package.json         # Hardware dependencies
-├── scripts/                 # Setup & utilities
-│   ├── setup-pi.sh          # Full Pi setup (manual mode)
-│   ├── update-system.sh     # Update & rebuild
-│   ├── dev-mode.sh          # Start both (dev)
-│   ├── start-hardware.sh    # Start hardware API
-│   └── start-frontend.sh    # Start frontend
-└── dist/                    # Built frontend
+sudo apt-get install -y golang-go
+bash ./scripts/build-esbuild-from-source.sh
+bash ./scripts/start-frontend.sh
 ```
 
----
+`vite-verbose.log` is empty
+- Crash happens before Vite logs due to esbuild
+- Rebuild from source and ensure ESBUILD_BINARY_PATH is exported (start script handles this)
 
-## API (Hardware Controller on :3001)
+Hardware build errors
+- Ensure build tools: `sudo apt install -y build-essential python3 make g++ pkg-config`
+- In hardware/: `rm -rf node_modules && npm ci || npm install`
 
-- GET `/health` → service health
-- GET `/api/status` → hardware status
-- GET `/api/weight` → current weight
-- POST `/api/tare` → tare scale
-- POST `/api/pump` → `{ "pump": number, "duration": ms }`
-
-WebSocket: connect to `ws://localhost:3001` and listen for `{ type: "weight", data: number }`.
-
----
-
-## Customization
-
-- Add cocktails: edit `src/data/cocktails.json`
-- Map pumps to ingredients: `src/data/pump_mapping.json`
+Ports in use
+- Hardware 3001, Frontend 8080 — change in scripts if needed
 
 ---
 
-## Development (Any Platform)
-
+## Development (non‑Pi)
 ```bash
 # Frontend
 npm install
@@ -234,5 +187,4 @@ npm run dev  # http://localhost:3001
 ---
 
 ## License
-
 MIT

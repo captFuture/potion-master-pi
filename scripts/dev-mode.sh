@@ -9,7 +9,10 @@ cd "$(dirname "$0")/.."
 echo "Fixing file permissions..."
 bash ./scripts/fix-permissions.sh || true
 
-# Start hardware service in development
+# Prepare local esbuild for Vite
+# shellcheck disable=SC1091
+source ./scripts/use-local-esbuild.sh || true
+
 echo "Starting hardware service..."
 cd hardware
 npm run dev &
@@ -21,7 +24,7 @@ sleep 3
 # Start frontend development server
 echo "Starting frontend development server..."
 cd ..
-npm run dev &
+node ./node_modules/vite/bin/vite.js --host :: --port 8080 &
 FRONTEND_PID=$!
 
 echo ""

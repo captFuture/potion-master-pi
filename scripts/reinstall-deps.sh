@@ -27,6 +27,12 @@ npm install --no-optional
 echo "🧽 Running npm dedupe"
 npm dedupe || true
 
+# Ensure Vite resolves to the hoisted esbuild (remove nested copy if present)
+if [ -d node_modules/vite/node_modules/esbuild ]; then
+  echo "🧹 Removing nested esbuild under vite"
+  rm -rf node_modules/vite/node_modules/esbuild || true
+fi
+
 # Show which esbuild is used
 echo "🔎 esbuild locations"
 ls -la node_modules/esbuild/bin 2>/dev/null || true
