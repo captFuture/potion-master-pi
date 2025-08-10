@@ -1,30 +1,30 @@
-# Potion Master Pi – Statisches Frontend über Nginx (Raspberry Pi 4)
+# Potion Master Pi – Build am PC, Auslieferung via Nginx (Raspberry Pi 4)
 
-Ziel: Frontend wird auf einem Windows 11 PC gebaut und manuell auf den Raspberry Pi kopiert. Der Pi liefert die Dateien mit Nginx aus. Die Hardware-API bleibt unverändert.
+Ziel: Das Frontend wird auf einem Windows 11 PC gebaut und manuell auf den Raspberry Pi kopiert. Der Pi liefert die Dateien mit Nginx aus. Die Hardware-API bleibt unverändert.
 
 ---
 
-## 1) Build auf dem Windows 11 PC
+## A) PC (Windows 11): Frontend-Build
 
 Voraussetzungen: Node.js 20 LTS, npm
 
-- Im Projektordner ausführen:
-  - npm ci
-  - npm run build
-- Ergebnis liegt in ./dist
-
-Kopiere anschließend den Inhalt von ./dist manuell auf den Raspberry Pi nach:
-- /home/pi/potion-frontent-pi
+1. Im Projektordner ausführen:
+   - npm ci
+   - npm run build
+2. Ergebnis liegt in ./dist
+3. Kopiere anschließend den Inhalt von ./dist manuell auf den Raspberry Pi nach:
+   - /home/pi/potion-frontent-pi
 
 Tipps zum Kopieren von Windows:
-- PowerShell (OpenSSH): scp -r .\dist\* pi@<pi-ip>:/home/pi/potion-frontent-pi/
+- PowerShell (OpenSSH):
+  - scp -r .\dist\* pi@<pi-ip>:/home/pi/potion-frontent-pi/
 - Oder WinSCP verwenden (Zielordner: /home/pi/potion-frontent-pi)
 
 ---
 
-## 2) Nginx auf dem Raspberry Pi installieren und aktivieren
+## B) Raspberry Pi: Nginx installieren, konfigurieren und starten
 
-Auf dem Pi ausführen:
+Auf dem Pi ausführen (als root bzw. per sudo):
 
 ```bash
 cd <projektverzeichnis>
@@ -34,18 +34,19 @@ sudo ./scripts/setup-nginx.sh /home/pi/potion-frontent-pi
 
 Das Script:
 - installiert Nginx (falls nicht vorhanden)
-- konfiguriert eine Site, die /home/pi/potion-frontent-pi als Root nutzt
+- erstellt das Doc-Root /home/pi/potion-frontent-pi (falls nicht vorhanden)
+- schreibt die Site-Config mit SPA-Fallback und Asset-Caching
 - aktiviert die Site, deaktiviert die Default-Site
 - testet die Config und startet Nginx neu
 - aktiviert Autostart (systemctl enable nginx)
 
 Danach erreichbar unter: http://<pi-ip>/
 
-Update des Frontends: Dateien erneut nach /home/pi/potion-frontent-pi kopieren, dann optional sudo systemctl reload nginx.
+Update des Frontends: Dateien erneut nach /home/pi/potion-frontent-pi kopieren, dann optional `sudo systemctl reload nginx`.
 
 ---
 
-## 3) Hardware-API (unverändert)
+## C) Hardware-API (unverändert)
 
 - Start: ./scripts/start-hardware.sh
 - Tests (im Ordner hardware/):
@@ -55,7 +56,7 @@ Update des Frontends: Dateien erneut nach /home/pi/potion-frontent-pi kopieren, 
 
 ---
 
-## 4) Optionale Services (inkl. Chromium Kiosk)
+## D) Optionale Services (inkl. Chromium Kiosk)
 
 Systemd-Services können installiert werden, sind aber optional.
 
@@ -77,7 +78,7 @@ sudo systemctl start cocktail-kiosk.service
 
 ---
 
-## 5) Projekt-Hinweise
+## Hinweise
 
 - Frontend-Build findet ausschließlich auf dem PC statt; auf dem Pi wird nichts mit Vite/esbuild kompiliert.
 - Statische Auslieferung über Nginx mit SPA-Fallback und Asset-Caching.

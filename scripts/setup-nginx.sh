@@ -6,7 +6,7 @@ set -euo pipefail
 #   sudo ./scripts/setup-nginx.sh [/home/pi/potion-frontent-pi]
 # Default doc root: /home/pi/potion-frontent-pi
 
-WEB_ROOT=${1:-/home/pi/potion-frontend-pi}
+WEB_ROOT=${1:-/home/pi/potion-frontent-pi}
 SITE_NAME="potion-frontend"
 SITE_PATH="/etc/nginx/sites-available/${SITE_NAME}"
 ENABLED_LINK="/etc/nginx/sites-enabled/${SITE_NAME}"
@@ -21,7 +21,7 @@ mkdir -p "$WEB_ROOT"
 chown -R pi:pi "$WEB_ROOT" 2>/dev/null || true
 
 echo "📝 Writing nginx site config to ${SITE_PATH}"
-cat > "$SITE_PATH" '<<CONF'
+cat > "$SITE_PATH" <<CONF
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
@@ -32,14 +32,14 @@ server {
 
     # SPA routing
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files \$uri \$uri/ /index.html;
     }
 
     # Cache static assets
     location /assets/ {
         expires 30d;
         add_header Cache-Control "public, max-age=2592000, immutable";
-        try_files $uri =404;
+        try_files \$uri =404;
     }
 
     gzip on;
