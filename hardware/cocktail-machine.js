@@ -345,7 +345,7 @@ class CocktailMachine {
     // Deactivate all relays
     if (!this.mockMode && this.i2cBus) {
       try {
-        this.i2cBus.writeByteSync(this.relayAddress, 0xFF);
+        this.writeRelayState(0xFF);
         console.log('✅ All pumps deactivated');
       } catch (error) {
         console.error('❌ Cleanup error:', error);
