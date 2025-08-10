@@ -103,7 +103,7 @@ export class HardwareAPI {
         const response = await fetch(`${this.baseUrl}/api/status`);
         const data = await response.json();
         if (address === this.SCALE_ADDRESS) return data.scale;
-        if (address === this.RELAY_ADDRESS) return data.status === 'ready';
+        if (address === this.RELAY_ADDRESS) return data.relay;
         return false;
       } catch (error) {
         return false;
@@ -149,8 +149,13 @@ export class HardwareAPI {
     }
   }
 
-  // Pumpe aktivieren
+  // Pumpe aktivieren - Updated for PCF8574 relay control
   async activatePump(pump: number, duration: number): Promise<void> {
+    if (this.mockMode) {
+      console.log(`🎭 Mock mode: Pump ${pump} activated for ${duration}ms`);
+      return;
+    }
+
     try {
       const response = await fetch(`${this.baseUrl}/api/pump`, {
         method: 'POST',
@@ -162,7 +167,7 @@ export class HardwareAPI {
         throw new Error(`Pump activation failed: ${response.statusText}`);
       }
       
-      console.log(`✅ Pump ${pump} activated for ${duration}ms`);
+      console.log(`✅ Pump ${pump} activated for ${duration}ms (PCF8574 bit ${pump-1} = 0)`);
     } catch (error) {
       console.error('Pump activation error:', error);
       throw error;

@@ -127,20 +127,43 @@ class CocktailMachine {
         if (this.mockMode) {
           console.log(`🎭 Mock mode: Pump ${pumpNumber} activated`);
         } else {
-          // Relay activation (LOW = activated for most boards)
-          const activeMask = ~(1 << pumpNumber) & 0xFF;
+          // PCF8574 relay control: 0 = relay ON, 1 = relay OFF
+          // pumpNumber is 1-8, convert to bit position 0-7
+          const bitPosition = pumpNumber - 1;
+          
+          // Read current state first to preserve other relays
+          let currentState;
+          try {
+            currentState = this.i2cBus.receiveByteSync(this.relayAddress);
+          } catch (error) {
+            // If read fails, assume all relays are OFF (0xFF)
+            currentState = 0xFF;
+          }
+          
+          // Set the specific bit to 0 (activate relay)
+          const activeMask = currentState & ~(1 << bitPosition);
+          
           this.i2cBus.writeByteSync(this.relayAddress, activeMask);
-          console.log(`✅ Pump ${pumpNumber} activated with mask: 0x${activeMask.toString(16)}`);
+          console.log(`✅ Pump ${pumpNumber} activated - bit ${bitPosition} set to 0 (mask: 0x${activeMask.toString(16).padStart(2, '0').toUpperCase()})`);
         }
         
         setTimeout(() => {
           try {
             if (!this.mockMode) {
-              // Deactivate all relays
-              this.i2cBus.writeByteSync(this.relayAddress, 0xFF);
+              // Read current state and set the specific bit to 1 (deactivate relay)
+              let currentState;
+              try {
+                currentState = this.i2cBus.receiveByteSync(this.relayAddress);
+              } catch (error) {
+                currentState = 0xFF;
+              }
+              
+              const bitPosition = pumpNumber - 1;
+              const deactiveMask = currentState | (1 << bitPosition);
+              this.i2cBus.writeByteSync(this.relayAddress, deactiveMask);
+              console.log(`🛑 Pump ${pumpNumber} deactivated - bit ${bitPosition} set to 1 (mask: 0x${deactiveMask.toString(16).padStart(2, '0').toUpperCase()})`);
             }
             this.activePumps.delete(pumpNumber);
-            console.log(`🛑 Pump ${pumpNumber} deactivated`);
             resolve();
           } catch (error) {
             console.error(`❌ Error deactivating pump ${pumpNumber}:`, error);
