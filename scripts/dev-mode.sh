@@ -5,6 +5,10 @@ echo "================================================"
 
 cd "$(dirname "$0")/.."
 
+# Ensure permissions
+echo "Fixing file permissions..."
+bash ./scripts/fix-permissions.sh || true
+
 # Start hardware service in development
 echo "Starting hardware service..."
 cd hardware
