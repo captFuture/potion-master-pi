@@ -73,8 +73,8 @@ class CocktailMachine {
       }
     });
     
-    // Waage tarieren
-    this.app.post('/api/tare', async (req, res) => {
+    // Waage tarieren (accept GET and POST for convenience)
+    this.app.all('/api/tare', async (req, res) => {
       try {
         await this.tareScale();
         res.json({ status: 'tared' });
@@ -374,7 +374,7 @@ process.on('SIGINT', () => {
 });
 
 // Server starten
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 const machine = new CocktailMachine();
 global.machine = machine;
 machine.start(PORT);
