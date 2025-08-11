@@ -12,6 +12,7 @@ import { Screensaver } from '@/components/Screensaver';
 import { Button } from '@/components/ui/button';
 import { CocktailRecipe } from '@/types/cocktail';
 import { Settings, Martini, Sparkles, Wand2 } from 'lucide-react';
+import { I18nProvider } from '@/contexts/I18nContext';
 
 type AppScreen = 'menu' | 'settings' | 'serving';
 
@@ -28,7 +29,7 @@ const Index = () => {
     updateSettings
   } = useCocktailMachine();
   
-  const { status: hardwareStatus } = useHardware();
+  const { status: hardwareStatus, tareScale } = useHardware();
   
   // Apply theme based on selected language
   useTheme(settings.language);
@@ -52,6 +53,11 @@ const Index = () => {
   const handleConfirmServing = async () => {
     if (selectedCocktail) {
       setShowConfirmation(false);
+      try {
+        await tareScale();
+      } catch (e) {
+        console.warn('Tare failed, continuing in mock mode');
+      }
       setCurrentScreen('serving');
       await startServing(selectedCocktail.id);
     }
@@ -84,90 +90,96 @@ const Index = () => {
 
   if (currentScreen === 'serving') {
     return (
-      <ServingProgress
-        servingState={servingState}
-        getCocktailName={getCocktailName}
-        getIngredientName={getIngredientName}
-        onStop={handleStopServing}
-        onComplete={handleCompleteServing}
-      />
+      <I18nProvider language={settings.language}>
+        <ServingProgress
+          servingState={servingState}
+          getCocktailName={getCocktailName}
+          getIngredientName={getIngredientName}
+          onStop={handleStopServing}
+          onComplete={handleCompleteServing}
+        />
+      </I18nProvider>
     );
   }
 
   if (currentScreen === 'settings') {
     return (
-      <SettingsScreen
-        settings={settings}
-        ingredientCategories={ingredientCategories}
-        getIngredientName={getIngredientName}
-        onUpdateSettings={updateSettings}
-        onBack={handleCloseSettings}
-      />
+      <I18nProvider language={settings.language}>
+        <SettingsScreen
+          settings={settings}
+          ingredientCategories={ingredientCategories}
+          getIngredientName={getIngredientName}
+          onUpdateSettings={updateSettings}
+          onBack={handleCloseSettings}
+        />
+      </I18nProvider>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-gradient-surface border-b border-card-border p-6">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 bg-gradient-primary rounded-lg ${settings.language === 'hogwarts' ? 'magical-sparkle' : ''}`}>
-              {settings.language === 'hogwarts' ? (
-                <Wand2 className="h-8 w-8 text-primary-foreground animate-float" />
-              ) : (
-                <Martini className="h-8 w-8 text-primary-foreground" />
-              )}
+    <I18nProvider language={settings.language}>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="bg-gradient-surface border-b border-card-border p-6">
+          <div className="max-w-6xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 bg-gradient-primary rounded-lg ${settings.language === 'hogwarts' ? 'magical-sparkle' : ''}`}>
+                {settings.language === 'hogwarts' ? (
+                  <Wand2 className="h-8 w-8 text-primary-foreground animate-float" />
+                ) : (
+                  <Martini className="h-8 w-8 text-primary-foreground" />
+                )}
+              </div>
+              <div>
+                <h1 className={`text-2xl font-bold text-foreground ${settings.language === 'hogwarts' ? 'text-magical' : ''}`}>
+                  {settings.machineName}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {settings.subLine}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className={`text-2xl font-bold text-foreground ${settings.language === 'hogwarts' ? 'text-magical' : ''}`}>
-                {settings.machineName}
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {settings.subLine}
-              </p>
+            
+            <div className="flex items-center gap-4">
+              <HardwareStatus activePumps={hardwareStatus.activePumps} />
+              <Button 
+                onClick={handleOpenSettings}
+                variant="outline" 
+                size="icon"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
             </div>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <HardwareStatus activePumps={hardwareStatus.activePumps} />
-            <Button 
-              onClick={handleOpenSettings}
-              variant="outline" 
-              size="icon"
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto p-6">
+        {/* Main Content */}
+        <main className="max-w-6xl mx-auto p-6">
 
-        <CocktailGrid
-          cocktails={availableCocktails}
+          <CocktailGrid
+            cocktails={availableCocktails}
+            getCocktailName={getCocktailName}
+            getIngredientName={getIngredientName}
+            language={settings.language}
+            onSelectCocktail={handleCocktailSelect}
+          />
+        </main>
+
+        <ConfirmationDialog
+          isOpen={showConfirmation}
+          cocktail={selectedCocktail}
           getCocktailName={getCocktailName}
           getIngredientName={getIngredientName}
-          language={settings.language}
-          onSelectCocktail={handleCocktailSelect}
+          onConfirm={handleConfirmServing}
+          onCancel={handleCancelServing}
         />
-      </main>
 
-      <ConfirmationDialog
-        isOpen={showConfirmation}
-        cocktail={selectedCocktail}
-        getCocktailName={getCocktailName}
-        getIngredientName={getIngredientName}
-        onConfirm={handleConfirmServing}
-        onCancel={handleCancelServing}
-      />
-
-      <Screensaver 
-        isActive={isScreensaverActive}
-        onDismiss={resetScreensaver}
-      />
-    </div>
+        <Screensaver 
+          isActive={isScreensaverActive}
+          onDismiss={resetScreensaver}
+        />
+      </div>
+    </I18nProvider>
   );
 };
 

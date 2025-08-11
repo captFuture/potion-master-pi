@@ -1,0 +1,65 @@
+{
+  "en": {
+    "confirm_title": "Confirm Your Order",
+    "glass_instruction": "Please place your glass on the marked spot now.",
+    "ingredients_label": "Ingredients:",
+    "manual_add_label": "Manual addition required:",
+    "estimated_time": "Est. {seconds} seconds",
+    "total_volume": "Total: {total}ml",
+    "cancel": "Cancel",
+    "start_preparing": "Start Preparing",
+
+    "serving_error_title": "Error",
+    "back_to_menu": "Back to Menu",
+    "almost_ready_title": "Almost Ready!",
+    "please_add_manually": "Please add manually:",
+    "complete_return": "Complete & Return to Menu",
+    "ready_to_serve_title": "Ready to Serve!",
+    "preparing_title": "Preparing",
+    "currently_serving": "Currently serving:",
+    "progress_label": "Progress",
+    "stop_cancel": "Stop & Cancel"
+  },
+  "de": {
+    "confirm_title": "Bestätige deine Bestellung",
+    "glass_instruction": "Bitte stelle jetzt das Glas auf den markierten Punkt.",
+    "ingredients_label": "Zutaten:",
+    "manual_add_label": "Manuelle Zugabe erforderlich:",
+    "estimated_time": "Ca. {seconds} Sekunden",
+    "total_volume": "Gesamt: {total}ml",
+    "cancel": "Abbrechen",
+    "start_preparing": "Zubereitung starten",
+
+    "serving_error_title": "Fehler",
+    "back_to_menu": "Zurück zum Menü",
+    "almost_ready_title": "Fast fertig!",
+    "please_add_manually": "Bitte manuell hinzufügen:",
+    "complete_return": "Abschließen & zurück zum Menü",
+    "ready_to_serve_title": "Bereit zum Servieren!",
+    "preparing_title": "Zubereitung läuft",
+    "currently_serving": "Aktuell wird ausgeschenkt:",
+    "progress_label": "Fortschritt",
+    "stop_cancel": "Stoppen & Abbrechen"
+  },
+  "hogwarts": {
+    "confirm_title": "Seal Thy Potion Order",
+    "glass_instruction": "Platziere den Kelch auf dem leuchtenden Siegel.",
+    "ingredients_label": "Zutaten des Tranks:",
+    "manual_add_label": "Manuelle Hexenzugabe nötig:",
+    "estimated_time": "Zauberzeit: {seconds} Sekunden",
+    "total_volume": "Essenz gesamt: {total}ml",
+    "cancel": "Abbrechen",
+    "start_preparing": "Brauen beginnen",
+
+    "serving_error_title": "Zauber fehlgeschlagen",
+    "back_to_menu": "Zur Tafel zurück",
+    "almost_ready_title": "Beinahe vollendet!",
+    "please_add_manually": "Bitte manuell hinzufügen:",
+    "complete_return": "Vollenden & zurück",
+    "ready_to_serve_title": "Zum Ausschenken bereit!",
+    "preparing_title": "Brauvorgang läuft",
+    "currently_serving": "Gegenwärtig im Fluss:",
+    "progress_label": "Fortschritt",
+    "stop_cancel": "Stopp & Abbruch"
+  }
+}
