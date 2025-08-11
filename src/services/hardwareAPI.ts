@@ -2,6 +2,7 @@
 export class HardwareAPI {
   private baseUrl: string;
   private ws: WebSocket | null = null;
+  private wsReconnectDelay = 2000;
   private weightCallback?: (weight: number) => void;
   private i2cBus: any = null;
   
@@ -40,37 +41,39 @@ export class HardwareAPI {
   // WebSocket für Live-Updates
   private connectWebSocket() {
     try {
-      this.ws = new WebSocket(`ws://localhost:3000`);
+      const wsUrl = this.baseUrl.replace(/^http/, 'ws');
+      this.ws = new WebSocket(wsUrl);
       
       this.ws.onopen = () => {
         console.log('🔗 Hardware WebSocket connected');
         this.mockMode = false;
+        this.wsReconnectDelay = 2000;
       };
       
       this.ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'weight' && this.weightCallback) {
-          this.weightCallback(data.data);
-        }
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'weight' && this.weightCallback) {
+            this.weightCallback(data.data);
+          }
+        } catch {}
       };
       
       this.ws.onclose = () => {
-        console.log('❌ Hardware WebSocket disconnected - switching to mock mode');
-        this.mockMode = true;
-        // Don't reconnect as aggressively to avoid spam
-        setTimeout(() => this.connectWebSocket(), 10000);
+        console.log('❌ Hardware WebSocket disconnected - will retry');
+        // Do NOT switch to mock mode just because WS disconnected
+        setTimeout(() => this.connectWebSocket(), this.wsReconnectDelay);
+        this.wsReconnectDelay = Math.min(this.wsReconnectDelay * 2, 10000);
       };
       
       this.ws.onerror = () => {
-        // Suppress repeated error logs
-        if (!this.mockMode) {
-          console.log('⚠️ Hardware server not available - using mock mode');
-          this.mockMode = true;
-        }
+        // HTTP API may still be available; keep real mode and retry WS
+        console.log('⚠️ WebSocket error - retrying connection');
       };
     } catch (error) {
-      console.log('⚠️ Hardware server not available - using mock mode');
-      this.mockMode = true;
+      console.log('⚠️ Hardware WebSocket setup failed - will retry');
+      setTimeout(() => this.connectWebSocket(), this.wsReconnectDelay);
+      this.wsReconnectDelay = Math.min(this.wsReconnectDelay * 2, 10000);
     }
   }
 
