@@ -17,6 +17,21 @@ fi
 echo "✅ Source directory '$SOURCE_DIR' found."
 echo "------------------------------------------"
 
+
+# Step 0: delete old files in Nginx web root
+echo "🚀 Deleting files from '$DEST_DIR'..."
+sudo rm -rf "$DEST_DIR"
+
+if [ $? -eq 0 ]; then
+    echo "✅ Files deleted successfully."
+else
+    echo "❌ Error: Failed to delete files."
+    exit 1
+fi
+echo "------------------------------------------"
+
+
+
 # Step 1: Copy the contents of the source directory to the Nginx web root
 echo "🚀 Copying files from '$SOURCE_DIR' to '$DEST_DIR'..."
 # The trailing slash on the source directory ensures only its contents are copied.
