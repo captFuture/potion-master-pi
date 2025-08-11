@@ -37,6 +37,11 @@ apt-get install -y curl git rsync
 # Nginx (installed or upgraded by helper)
 "$REPO_ROOT"/scripts/setup-nginx.sh "$NGINX_ROOT"
 
+# Ensure web root and dist exist with correct ownership and permissions for nginx
+mkdir -p "$NGINX_ROOT/dist"
+chown -R www-data:www-data "$NGINX_ROOT" 2>/dev/null || true
+chmod -R 755 "$NGINX_ROOT"
+
 # Chromium for kiosk (package name may differ per OS release)
 if ! command -v chromium-browser >/dev/null 2>&1; then
   echo "🌐 Installing Chromium browser (kiosk) ..."
@@ -82,7 +87,7 @@ cat <<INFO
 
 Next steps (from your PC):
 1) Build the frontend (npm run build) and copy files to the Pi, e.g.:
-   scp -r dist/* ${USER_NAME}@<pi-ip>:${NGINX_ROOT}/
+   scp -r dist/* ${USER_NAME}@<pi-ip>:${NGINX_ROOT}/dist/
 
 2) Open: http://<pi-ip>/
 

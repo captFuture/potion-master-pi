@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define the full path for the new index.html file
-DEST_PATH="/var/www/potion-frontend-pi/index.html"
-DEST_DIR="/var/www/potion-frontend-pi"
+DEST_PATH="/var/www/potion-frontend-pi/dist/index.html"
+DEST_DIR="/var/www/potion-frontend-pi/dist"
 
 echo "=========================================="
 echo " Starting Nginx Index File Creation"
@@ -29,7 +29,7 @@ sudo tee "$DEST_PATH" > /dev/null << 'EOF'
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting...</title>
-    <meta http-equiv="refresh" content="0; url=./dist/">
+    <meta http-equiv="refresh" content="0; url=./">
 </head>
 <body>
     <h1>Redirecting to the application...</h1>

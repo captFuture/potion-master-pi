@@ -17,10 +17,10 @@ echo "📦 Installing nginx if missing..."
 apt-get update -y
 apt-get install -y nginx
 
-echo "📁 Creating doc root: ${WEB_ROOT}"
-mkdir -p "$WEB_ROOT"
-# Set ownership to the invoking user (usually 'pi') so deploying via scp is easy
-chown -R "$DOC_USER":"$DOC_USER" "$WEB_ROOT" 2>/dev/null || true
+echo "📁 Creating doc root and dist: ${WEB_ROOT}/dist"
+mkdir -p "$WEB_ROOT/dist"
+# Set ownership and permissions for nginx
+chown -R www-data:www-data "$WEB_ROOT" 2>/dev/null || true
 chmod -R 755 "$WEB_ROOT"
 
 echo "📝 Writing nginx site config to ${SITE_PATH}"
@@ -30,7 +30,7 @@ server {
     listen [::]:80 default_server;
     server_name _;
 
-    root ${WEB_ROOT};
+    root ${WEB_ROOT}/dist;
     index index.html;
 
     # SPA routing

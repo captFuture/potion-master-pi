@@ -1,6 +1,6 @@
 # Potion Master Pi – PC Build, Nginx on Raspberry Pi (Raspberry Pi 4/5)
 
-Goal: Build the frontend on a Windows 11 PC, copy the built files to the Raspberry Pi, and serve them via Nginx from /var/www/potion-frontend-pi. The Hardware API remains as-is and can run via systemd or manually.
+Goal: Build the frontend on a Windows 11 PC, copy the built files to the Raspberry Pi, and serve them via Nginx from /var/www/potion-frontend-pi/dist. The Hardware API remains as-is and can run via systemd or manually.
 
 ---
 
@@ -54,7 +54,7 @@ Automatic one-shot setup (recommended):
 # Runs with sudo, installs Nginx, Chromium (kiosk), Node.js 20 LTS, hardware deps, services
 sudo ./scripts/setup-pi-all.sh -u pi
 ```
-- Nginx will serve from: /var/www/potion-frontend-pi
+- Nginx will serve from: /var/www/potion-frontend-pi/dist
 - Nginx is enabled on boot
 - Services are installed; to auto-start them on boot, run:
   ```bash
@@ -72,7 +72,7 @@ sudo ./scripts/install-services.sh -u pi
 ```
 
 Deploy the built frontend (after building on the PC):
-- scp -r dist/* pi@<pi-ip>:/var/www/potion-frontend-pi/
+- scp -r dist/* pi@<pi-ip>:/var/www/potion-frontend-pi/dist/
 - Open http://<pi-ip>/
 
 ---
@@ -109,8 +109,8 @@ npm run test-relay
 
 ## Notes
 - Frontend build happens only on the PC; the Pi only serves static files via Nginx.
-- Web root used by Nginx: /var/www/potion-frontend-pi
-- Clean update flow: rebuild on PC, copy files to /var/www/potion-frontend-pi, then:
+- Web root used by Nginx: /var/www/potion-frontend-pi/dist
+- Clean update flow: rebuild on PC, copy files to /var/www/potion-frontend-pi/dist, then:
   ```bash
   sudo systemctl reload nginx
   ```
