@@ -107,10 +107,30 @@ class CocktailMachine {
   }
   
   setupWebSocket() {
+    // Heartbeat ping/pong for client liveness
+    if (!this.pingTimer) {
+      this.pingTimer = setInterval(() => {
+        this.wss.clients.forEach((client) => {
+          // @ts-ignore - ws custom flag
+          if (client.isAlive === false) {
+            console.warn('WS client unresponsive - terminating');
+            return client.terminate();
+          }
+          // @ts-ignore
+          client.isAlive = false;
+          try { client.ping(); } catch (e) { console.error('WS ping error:', e); }
+        });
+      }, 15000);
+    }
+
     this.wss.on('connection', (ws) => {
       console.log('WebSocket client connected');
+      // @ts-ignore
+      ws.isAlive = true;
+      ws.on('pong', () => { /* @ts-ignore */ ws.isAlive = true; });
+      ws.on('error', (err) => console.error('WS client error:', err));
       
-      // Kontinuierliche Gewichtsupdates
+      // Continuous weight updates
       const weightInterval = setInterval(async () => {
         try {
           const weight = await this.readWeight();
@@ -120,7 +140,7 @@ class CocktailMachine {
         } catch (error) {
           console.error('Weight reading error:', error);
         }
-      }, 500); // Alle 500ms
+      }, 500);
       
       ws.on('close', () => {
         clearInterval(weightInterval);
@@ -153,9 +173,16 @@ class CocktailMachine {
           
           // Set the specific bit to 0 (activate relay)
           const activeMask = currentState & ~(1 << bitPosition);
-          
           this.writeRelayState(activeMask);
           console.log(`✅ Pump ${pumpNumber} activated - bit ${bitPosition} set to 0 (mask: 0x${activeMask.toString(16).padStart(2, '0').toUpperCase()})`);
+          // Broadcast pump event
+          try {
+            this.wss?.clients.forEach((c) => {
+              if (c.readyState === WebSocket.OPEN) {
+                c.send(JSON.stringify({ type: 'pump', pump: pumpNumber, state: 'on' }));
+              }
+            });
+          } catch (e) { console.warn('WS broadcast error (pump on):', e); }
         }
         
         setTimeout(() => {
@@ -173,6 +200,14 @@ class CocktailMachine {
               const deactiveMask = currentState | (1 << bitPosition);
               this.writeRelayState(deactiveMask);
               console.log(`🛑 Pump ${pumpNumber} deactivated - bit ${bitPosition} set to 1 (mask: 0x${deactiveMask.toString(16).padStart(2, '0').toUpperCase()})`);
+              // Broadcast pump event
+              try {
+                this.wss?.clients.forEach((c) => {
+                  if (c.readyState === WebSocket.OPEN) {
+                    c.send(JSON.stringify({ type: 'pump', pump: pumpNumber, state: 'off' }));
+                  }
+                });
+              } catch (e) { console.warn('WS broadcast error (pump off):', e); }
             }
             this.activePumps.delete(pumpNumber);
             resolve();
@@ -382,6 +417,12 @@ class CocktailMachine {
       } catch (error) {
         console.error('❌ Cleanup error:', error);
       }
+    }
+    
+    // Stop ping timer
+    if (this.pingTimer) {
+      try { clearInterval(this.pingTimer); } catch {}
+      this.pingTimer = null;
     }
     
     // Close I2C Bus

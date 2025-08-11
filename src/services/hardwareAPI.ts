@@ -3,6 +3,8 @@ export class HardwareAPI {
   private baseUrl: string;
   private ws: WebSocket | null = null;
   private wsReconnectDelay = 2000;
+  private wsHeartbeatInterval: number | null = null;
+  private wsLastMessageAt = 0;
   private weightCallback?: (weight: number) => void;
   private i2cBus: any = null;
   
@@ -38,40 +40,59 @@ export class HardwareAPI {
     }
   }
 
-  // WebSocket für Live-Updates
+  // WebSocket for live updates with heartbeat and detailed logging
   private connectWebSocket() {
     try {
       const wsUrl = this.baseUrl.replace(/^http/, 'ws');
       this.ws = new WebSocket(wsUrl);
-      
+      this.wsLastMessageAt = Date.now();
+
       this.ws.onopen = () => {
         console.log('🔗 Hardware WebSocket connected');
-        this.mockMode = false;
         this.wsReconnectDelay = 2000;
+        this.wsLastMessageAt = Date.now();
+
+        // Heartbeat: if no messages arrive for 5s, force reconnect
+        if (this.wsHeartbeatInterval) {
+          clearInterval(this.wsHeartbeatInterval);
+        }
+        this.wsHeartbeatInterval = window.setInterval(() => {
+          const silenceMs = Date.now() - this.wsLastMessageAt;
+          if (silenceMs > 10000) {
+            console.warn(`⏱️ WS silence ${silenceMs}ms (keeping connection open)`);
+          }
+        }, 2500);
       };
-      
+
       this.ws.onmessage = (event) => {
+        this.wsLastMessageAt = Date.now();
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'weight' && this.weightCallback) {
             this.weightCallback(data.data);
+          } else if (data.type === 'pump') {
+            console.log(`🔄 WS pump event: #${data.pump} -> ${data.state}`);
           }
-        } catch {}
+        } catch (err) {
+          console.warn('WS message parse error:', err);
+        }
       };
-      
-      this.ws.onclose = () => {
-        console.log('❌ Hardware WebSocket disconnected - will retry');
-        // Do NOT switch to mock mode just because WS disconnected
+
+      this.ws.onclose = (ev) => {
+        console.log(`❌ Hardware WebSocket disconnected (code=${ev.code}, reason=${ev.reason}, clean=${ev.wasClean}) - will retry`);
+        if (this.wsHeartbeatInterval) {
+          clearInterval(this.wsHeartbeatInterval);
+          this.wsHeartbeatInterval = null;
+        }
         setTimeout(() => this.connectWebSocket(), this.wsReconnectDelay);
         this.wsReconnectDelay = Math.min(this.wsReconnectDelay * 2, 10000);
       };
-      
-      this.ws.onerror = () => {
-        // HTTP API may still be available; keep real mode and retry WS
-        console.log('⚠️ WebSocket error - retrying connection');
+
+      this.ws.onerror = (ev) => {
+        console.error('⚠️ WebSocket error event:', ev);
       };
     } catch (error) {
-      console.log('⚠️ Hardware WebSocket setup failed - will retry');
+      console.log('⚠️ Hardware WebSocket setup failed - will retry', error);
       setTimeout(() => this.connectWebSocket(), this.wsReconnectDelay);
       this.wsReconnectDelay = Math.min(this.wsReconnectDelay * 2, 10000);
     }
@@ -160,17 +181,20 @@ export class HardwareAPI {
     }
 
     try {
+      console.log(`Activating pump ${pump} for ${duration}ms via HTTP…`);
       const response = await fetch(`${this.baseUrl}/api/pump`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(5000),
         body: JSON.stringify({ pump, duration })
       });
       
       if (!response.ok) {
-        throw new Error(`Pump activation failed: ${response.statusText}`);
+        const text = await response.text().catch(() => '');
+        throw new Error(`Pump activation failed (${response.status}): ${response.statusText} ${text}`);
       }
       
-      console.log(`✅ Pump ${pump} activated for ${duration}ms (PCF8574 bit ${pump-1} = 0)`);
+      console.log(`✅ Pump ${pump} activation request accepted (duration=${duration}ms)`);
     } catch (error) {
       console.error('Pump activation error:', error);
       throw error;
@@ -179,12 +203,17 @@ export class HardwareAPI {
 
   // Start pump until explicitly stopped (uses long duration)
   async startPump(pump: number): Promise<void> {
+    console.log(`Start pump ${pump} (long run)`);
     const response = await fetch(`${this.baseUrl}/api/pump`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000),
       body: JSON.stringify({ pump, duration: 600000 })
     });
-    if (!response.ok) throw new Error(`Start pump failed: ${response.statusText}`);
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(`Start pump failed (${response.status}): ${response.statusText} ${text}`);
+    }
   }
 
   // Stop pump immediately via dedicated endpoint
@@ -192,9 +221,13 @@ export class HardwareAPI {
     const response = await fetch(`${this.baseUrl}/api/pump/stop`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(5000),
       body: JSON.stringify({ pump })
     });
-    if (!response.ok) throw new Error(`Stop pump failed: ${response.statusText}`);
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(`Stop pump failed (${response.status}): ${response.statusText} ${text}`);
+    }
   }
 
   // Gewicht einmalig messen
