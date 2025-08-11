@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define the full path for the new index.html file
-DEST_PATH="/var/www/potion-master-pi/index.html"
-DEST_DIR="/var/www/potion-master-pi"
+DEST_PATH="/var/www/potion-frontend-pi/index.html"
+DEST_DIR="/var/www/potion-frontend-pi"
 
 echo "=========================================="
 echo " Starting Nginx Index File Creation"
