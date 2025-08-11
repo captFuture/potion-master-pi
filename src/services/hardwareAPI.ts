@@ -147,8 +147,8 @@ export class HardwareAPI {
         wifi
       };
     } catch (error) {
-      this.mockMode = true;
-      return { status: 'mock', pumps: 8, scale: true, relay: true, wifi: true };
+      console.error('Hardware status error:', error);
+      return { status: 'error', pumps: 0, scale: false, relay: false, wifi: false };
     }
   }
 
@@ -175,6 +175,26 @@ export class HardwareAPI {
       console.error('Pump activation error:', error);
       throw error;
     }
+  }
+
+  // Start pump until explicitly stopped (uses long duration)
+  async startPump(pump: number): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/pump`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pump, duration: 600000 })
+    });
+    if (!response.ok) throw new Error(`Start pump failed: ${response.statusText}`);
+  }
+
+  // Stop pump immediately via dedicated endpoint
+  async stopPump(pump: number): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/pump/stop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pump })
+    });
+    if (!response.ok) throw new Error(`Stop pump failed: ${response.statusText}`);
   }
 
   // Gewicht einmalig messen
@@ -205,7 +225,7 @@ export class HardwareAPI {
         const data = await response.json();
         return data.weight;
       } catch (error) {
-        this.mockMode = true;
+        console.error('HTTP API weight reading error:', error);
         return 0;
       }
     }
@@ -244,9 +264,8 @@ export class HardwareAPI {
         
         console.log('⚖️ Scale tared successfully (HTTP API)');
       } catch (error) {
-        this.mockMode = true;
-        this.mockWeight = 0;
-        console.log('⚖️ Scale tared successfully (mock mode)');
+        console.error('Scale tare failed (HTTP API):', error);
+        throw error;
       }
     }
   }

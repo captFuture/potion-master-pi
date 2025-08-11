@@ -62,6 +62,17 @@ class CocktailMachine {
         res.status(500).json({ error: error.message });
       }
     });
+
+    // Pumpe deaktivieren (sofort)
+    this.app.post('/api/pump/stop', async (req, res) => {
+      try {
+        const { pump } = req.body;
+        await this.deactivatePump(pump);
+        res.json({ status: 'stopped', pump });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
     
     // Gewicht messen
     this.app.get('/api/weight', async (req, res) => {
@@ -180,6 +191,27 @@ class CocktailMachine {
     });
   }
   
+  async deactivatePump(pumpNumber) {
+    try {
+      if (!this.mockMode) {
+        let currentState;
+        try {
+          currentState = this.readRelayState();
+        } catch (error) {
+          currentState = 0xFF;
+        }
+        const bitPosition = pumpNumber - 1;
+        const deactiveMask = currentState | (1 << bitPosition);
+        this.writeRelayState(deactiveMask);
+        console.log(`🛑 Pump ${pumpNumber} deactivated (manual) - bit ${bitPosition} set to 1 (mask: 0x${deactiveMask.toString(16).padStart(2, '0').toUpperCase()})`);
+      }
+      this.activePumps.delete(pumpNumber);
+    } catch (error) {
+      console.error(`❌ Error deactivating pump ${pumpNumber}:`, error);
+      throw error;
+    }
+  }
+
   async readWeight() {
     try {
       if (this.mockMode) {

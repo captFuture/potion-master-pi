@@ -97,6 +97,35 @@ export function useHardware() {
     }
   }, []);
 
+  const startPump = useCallback(async (pumpNumber: number) => {
+    setStatus(prev => ({
+      ...prev,
+      activePumps: new Set([...prev.activePumps, pumpNumber])
+    }));
+    try {
+      await hardwareAPI.startPump(pumpNumber);
+    } catch (error) {
+      setStatus(prev => {
+        const newActivePumps = new Set(prev.activePumps);
+        newActivePumps.delete(pumpNumber);
+        return { ...prev, activePumps: newActivePumps };
+      });
+      throw error;
+    }
+  }, []);
+
+  const stopPump = useCallback(async (pumpNumber: number) => {
+    try {
+      await hardwareAPI.stopPump(pumpNumber);
+    } finally {
+      setStatus(prev => {
+        const newActivePumps = new Set(prev.activePumps);
+        newActivePumps.delete(pumpNumber);
+        return { ...prev, activePumps: newActivePumps };
+      });
+    }
+  }, []);
+
   const tareScale = useCallback(async () => {
     try {
       await hardwareAPI.tareScale();
@@ -118,6 +147,8 @@ export function useHardware() {
   return {
     status,
     activatePump,
+    startPump,
+    stopPump,
     tareScale,
     getWeight
   };

@@ -1,56 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { AppSettings, CocktailRecipe, ServingState, Language } from '@/types/cocktail';
 import cocktailsData from '@/data/cocktails.json';
 import cocktailNamesData from '@/data/cocktail_name_mapping.json';
 import ingredientNamesData from '@/data/ingredient_mapping.json';
 import ingredientCategoriesData from '@/data/ingredient_category.json';
 
-// Mock hardware interfaces for demonstration
-class MockI2CRelay {
-  async activatePump(ingredientIndex: number): Promise<void> {
-    console.log(`Activating pump ${ingredientIndex}`);
-    // Simulate relay activation
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  async deactivatePump(ingredientIndex: number): Promise<void> {
-    console.log(`Deactivating pump ${ingredientIndex}`);
-    // Simulate relay deactivation
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-}
-
-class MockI2CScale {
-  private weight = 0;
-  private targetWeight = 0;
-  private isPouring = false;
-
-  async getCurrentWeight(): Promise<number> {
-    if (this.isPouring && this.weight < this.targetWeight) {
-      // Simulate liquid being dispensed at ~50ml/second
-      this.weight += Math.random() * 8 + 2;
-      if (this.weight > this.targetWeight) {
-        this.weight = this.targetWeight;
-        this.isPouring = false;
-      }
-    }
-    return Math.round(this.weight);
-  }
-
-  startPouring(targetAmount: number): void {
-    this.targetWeight = targetAmount;
-    this.isPouring = true;
-  }
-
-  reset(): void {
-    this.weight = 0;
-    this.targetWeight = 0;
-    this.isPouring = false;
-  }
-}
-
-const mockRelay = new MockI2CRelay();
-const mockScale = new MockI2CScale();
+import { hardwareAPI } from '@/services/hardwareAPI';
 
 // Default pump mapping (can be overridden by settings)
 const defaultPumpMapping: Record<string, number> = {
@@ -163,7 +118,7 @@ export function useCocktailMachine() {
     return mapping ? mapping[settings.language] : ingredientId;
   }, [settings.language]);
 
-  // Start serving a cocktail
+  // Start serving a cocktail using real hardware
   const startServing = useCallback(async (cocktailId: string) => {
     const cocktail = cocktailsData.find(c => c.id === cocktailId);
     if (!cocktail) {
@@ -171,8 +126,7 @@ export function useCocktailMachine() {
       return;
     }
 
-    mockScale.reset();
-    
+    // Reset UI state
     setServingState({
       cocktailId,
       currentIngredient: null,
@@ -184,9 +138,18 @@ export function useCocktailMachine() {
       postAddIngredient: cocktail.post_add || null
     });
 
-    // Serve each ingredient in sequence
+    // 1) Tare the scale before starting
+    try {
+      await hardwareAPI.tareScale();
+    } catch (e) {
+      setServingState(prev => ({ ...prev, error: 'Tare failed' }));
+      return;
+    }
+
+    let pouredSoFar = 0; // cumulative target
+
+    // 2) Serve each ingredient in sequence
     const ingredients = Object.entries(cocktail.ingredients);
-    
     for (const [ingredient, amount] of ingredients) {
       const pumpMapping = settings.pumpMapping || defaultPumpMapping;
       const pumpIndex = pumpMapping[ingredient];
@@ -206,54 +169,66 @@ export function useCocktailMachine() {
       }));
 
       try {
-        await mockRelay.activatePump(pumpIndex);
-        mockScale.startPouring(amount);
-        
-        // Monitor scale until target is reached
+        // 3) Start pump (long duration, we will stop explicitly)
+        await hardwareAPI.startPump(pumpIndex);
+
+        // 4) Monitor scale until target reached for this ingredient
+        // Target is cumulative: pouredSoFar + amount
+        const targetCumulative = pouredSoFar + amount;
         while (true) {
-          const currentWeight = await mockScale.getCurrentWeight();
-          setServingState(prev => ({
-            ...prev,
-            currentAmount: currentWeight
-          }));
-          
-          if (currentWeight >= amount) {
-            await mockRelay.deactivatePump(pumpIndex);
+          const weight = await hardwareAPI.getWeight();
+          const currentForIngredient = Math.max(0, Math.round(weight - pouredSoFar));
+          setServingState(prev => ({ ...prev, currentAmount: currentForIngredient }));
+
+          if (weight >= targetCumulative) {
             break;
           }
-          
-          await new Promise(resolve => setTimeout(resolve, 200));
+
+          await new Promise(res => setTimeout(res, 150));
         }
       } catch (error) {
         setServingState(prev => ({ 
           ...prev, 
           error: `Error serving ${ingredient}: ${error}` 
         }));
-        await mockRelay.deactivatePump(pumpIndex);
+        try { await hardwareAPI.stopPump(pumpIndex); } catch {}
         return;
+      } finally {
+        // 5) Stop pump
+        try { await hardwareAPI.stopPump(pumpIndex); } catch {}
       }
+
+      pouredSoFar += amount;
+      // Small settle delay
+      await new Promise(res => setTimeout(res, 200));
     }
 
+    // 6) Mark as complete
     setServingState(prev => ({
       ...prev,
       isComplete: true,
       currentIngredient: null
     }));
-  }, []);
+  }, [settings.pumpMapping]);
 
-  // Stop serving
-  const stopServing = useCallback(() => {
-    setServingState({
-      cocktailId: null,
-      currentIngredient: null,
-      targetAmount: 0,
-      currentAmount: 0,
-      isServing: false,
-      isComplete: false,
-      error: null,
-      postAddIngredient: null
-    });
-    mockScale.reset();
+  // Stop serving: stop any active pump and reset state
+  const stopServing = useCallback(async () => {
+    try {
+      // Best-effort: stop all pumps 1..8 to ensure safety
+      const stopAll = Array.from({ length: 8 }, (_, i) => i + 1).map(p => hardwareAPI.stopPump(p));
+      await Promise.allSettled(stopAll);
+    } finally {
+      setServingState({
+        cocktailId: null,
+        currentIngredient: null,
+        targetAmount: 0,
+        currentAmount: 0,
+        isServing: false,
+        isComplete: false,
+        error: null,
+        postAddIngredient: null
+      });
+    }
   }, []);
 
   // Update settings with persistence
