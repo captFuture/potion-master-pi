@@ -82,7 +82,7 @@ Deploy the built frontend (after building on the PC):
 - Nginx: enabled on boot
   - Check: sudo systemctl status nginx
 - Hardware API:
-  - Start now: sudo systemctl start cocktail-hardware.service
+  - Start now: sudo systemctl start cocktail-hardware.service (port 3000)
   - Autostart: sudo systemctl enable cocktail-hardware.service
 - Chromium Kiosk (opens http://localhost/):
   - Start now: sudo systemctl start cocktail-kiosk.service

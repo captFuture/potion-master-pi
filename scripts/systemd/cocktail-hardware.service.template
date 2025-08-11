@@ -10,6 +10,7 @@ WorkingDirectory=__REPO_ROOT__
 ExecStart=/bin/bash __REPO_ROOT__/scripts/start-hardware.sh
 Restart=on-failure
 Environment=NODE_ENV=production
+Environment=PORT=3000
 
 [Install]
 WantedBy=multi-user.target

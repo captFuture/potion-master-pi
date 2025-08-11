@@ -12,4 +12,4 @@ bash ./scripts/fix-permissions.sh || true
 
 # Start hardware controller
 cd hardware
-npm start
+PORT=${PORT:-3000} npm start

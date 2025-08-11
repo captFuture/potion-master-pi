@@ -6,7 +6,7 @@ set -euo pipefail
 #   sudo ./scripts/setup-nginx.sh [/var/www/potion-frontend-pi]
 # Default doc root: /var/www/potion-frontend-pi
 
-WEB_ROOT=${1:-/var/www/potion-frontend-pi/dist}
+WEB_ROOT=${1:-/var/www/potion-frontend-pi}
 SITE_NAME="potion-frontend"
 SITE_PATH="/etc/nginx/sites-available/${SITE_NAME}"
 ENABLED_LINK="/etc/nginx/sites-enabled/${SITE_NAME}"

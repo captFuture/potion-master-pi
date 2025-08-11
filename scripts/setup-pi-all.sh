@@ -16,7 +16,7 @@ fi
 
 REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
 USER_NAME="${SUDO_USER:-${USER:-pi}}"
-NGINX_ROOT="/var/www/potion-frontend-pi/dist"
+NGINX_ROOT="/var/www/potion-frontend-pi"
 ENABLE_SERVICES=false
 
 while getopts ":u:n:e" opt; do

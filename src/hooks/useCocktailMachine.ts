@@ -74,7 +74,7 @@ const loadStoredSettings = (): AppSettings => {
       const parsedSettings = JSON.parse(stored);
       // Merge with defaults to ensure all required fields exist
       return {
-        language: 'de',
+        language: 'en',
         machineName: 'Cocktail Machine',
         subLine: 'Professional Mixology System',
         enabledIngredients: {
@@ -82,10 +82,10 @@ const loadStoredSettings = (): AppSettings => {
           'white_rum': true,
           'white_wine': true,
           'orange_liqueur': true,
-          'lemon_juice': false,
-          'elderflower_syrup': false,
-          'passion_fruit_juice': false,
-          'soda': false,
+          'lemon_juice': true,
+          'elderflower_syrup': true,
+          'passion_fruit_juice': true,
+          'soda': true,
           'gin': false,
           'aperol': false,
           'prosecco': false,
@@ -104,7 +104,7 @@ const loadStoredSettings = (): AppSettings => {
   
   // Return defaults if no stored settings or error
   return {
-    language: 'de',
+    language: 'en',
     machineName: 'Cocktail Machine',
     subLine: 'Professional Mixology System',
     enabledIngredients: {
@@ -112,10 +112,10 @@ const loadStoredSettings = (): AppSettings => {
       'white_rum': true,
       'white_wine': true,
       'orange_liqueur': true,
-      'lemon_juice': false,
-      'elderflower_syrup': false,
-      'passion_fruit_juice': false,
-      'soda': false,
+      'lemon_juice': true,
+      'elderflower_syrup': true,
+      'passion_fruit_juice': true,
+      'soda': true,
       'gin': false,
       'aperol': false,
       'prosecco': false,
