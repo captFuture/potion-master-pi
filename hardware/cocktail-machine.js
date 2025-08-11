@@ -142,9 +142,9 @@ class CocktailMachine {
         }
       }, 500);
       
-      ws.on('close', () => {
+      ws.on('close', (code, reason) => {
         clearInterval(weightInterval);
-        console.log('WebSocket client disconnected');
+        console.log(`WebSocket client disconnected (code=${code}, reason=${reason?.toString?.() || ''})`);
       });
     });
   }

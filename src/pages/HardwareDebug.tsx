@@ -50,6 +50,23 @@ const HardwareDebug: React.FC = () => {
     try { await hardwareAPI.stopPump(pump); addLog('Stop OK'); } catch (e: any) { addLog('Stop ERR: ' + e?.message); }
   };
 
+  // Raw WebSocket probe (bypasses app state to isolate issues)
+  const [probeConnected, setProbeConnected] = useState(false);
+  const [probeEvents, setProbeEvents] = useState<string[]>([]);
+  const probeRef = useRef<WebSocket | null>(null);
+  const addProbe = (line: string) => setProbeEvents((l) => [new Date().toLocaleTimeString() + ' ' + line, ...l].slice(0, 200));
+  const probeConnect = () => {
+    if (probeRef.current) return;
+    const wsUrl = hardwareAPI.getBaseUrl().replace(/^http/, 'ws');
+    const ws = new WebSocket(wsUrl);
+    probeRef.current = ws;
+    ws.onopen = () => { setProbeConnected(true); addProbe('WS open'); };
+    ws.onmessage = (e) => { addProbe('WS message: ' + String(e.data).slice(0, 120)); };
+    ws.onerror = (e) => { addProbe('WS error'); };
+    ws.onclose = (e) => { setProbeConnected(false); addProbe(`WS close code=${e.code} reason=${e.reason} clean=${e.wasClean}`); probeRef.current = null; };
+  };
+  const probeDisconnect = () => { try { probeRef.current?.close(); } catch {} finally { probeRef.current = null; setProbeConnected(false); } };
+
   const wsStaleness = lastWsAt ? Math.round((Date.now() - lastWsAt) / 1000) : null;
 
   return (
@@ -96,6 +113,18 @@ const HardwareDebug: React.FC = () => {
           <Button onClick={handleActivate}>Activate</Button>
           <Button variant="secondary" onClick={handleStart}>Start</Button>
           <Button variant="destructive" onClick={handleStop}>Stop</Button>
+        </div>
+      </section>
+
+      <section className="p-4 rounded-lg border border-card-border bg-card space-y-2">
+        <h2 className="font-medium">Raw WS Probe</h2>
+        <div className="flex items-center gap-2">
+          <Button onClick={probeConnect} disabled={probeConnected}>Connect</Button>
+          <Button variant="outline" onClick={probeDisconnect} disabled={!probeConnected}>Disconnect</Button>
+          <span className="text-sm text-muted-foreground">State: {probeConnected ? 'connected' : 'disconnected'}</span>
+        </div>
+        <div className="h-40 overflow-auto text-xs font-mono whitespace-pre-wrap bg-muted/30 p-2 rounded">
+          {probeEvents.map((l, i) => (<div key={i}>{l}</div>))}
         </div>
       </section>
 

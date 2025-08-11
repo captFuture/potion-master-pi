@@ -5,7 +5,9 @@ export class HardwareAPI {
   private wsReconnectDelay = 2000;
   private wsHeartbeatInterval: number | null = null;
   private wsLastMessageAt = 0;
+  private wsConnected = false;
   private weightCallback?: (weight: number) => void;
+  private wsStatusCallback?: (connected: boolean, info?: { code?: number; reason?: string; clean?: boolean }) => void;
   private i2cBus: any = null;
   
   // I2C Constants
@@ -51,8 +53,10 @@ export class HardwareAPI {
         console.log('🔗 Hardware WebSocket connected');
         this.wsReconnectDelay = 2000;
         this.wsLastMessageAt = Date.now();
+        this.wsConnected = true;
+        this.wsStatusCallback?.(true);
 
-        // Heartbeat: if no messages arrive for 5s, force reconnect
+        // Heartbeat: if no messages arrive for 5s, log silence
         if (this.wsHeartbeatInterval) {
           clearInterval(this.wsHeartbeatInterval);
         }
@@ -84,6 +88,8 @@ export class HardwareAPI {
           clearInterval(this.wsHeartbeatInterval);
           this.wsHeartbeatInterval = null;
         }
+        this.wsConnected = false;
+        this.wsStatusCallback?.(false, { code: ev.code, reason: String(ev.reason || ''), clean: ev.wasClean });
         setTimeout(() => this.connectWebSocket(), this.wsReconnectDelay);
         this.wsReconnectDelay = Math.min(this.wsReconnectDelay * 2, 10000);
       };
@@ -101,12 +107,14 @@ export class HardwareAPI {
   // Check WiFi connection
   async checkWiFiConnection(): Promise<boolean> {
     try {
-      // Check network connectivity
-      const response = await fetch('http://www.google.com', { 
-        mode: 'no-cors',
-        signal: AbortSignal.timeout(5000)
-      });
-      return true;
+      // In browser, rely on navigator.onLine to avoid CORS to external sites
+      if (typeof window !== 'undefined') {
+        return navigator.onLine;
+      }
+      // In Node.js (hardware), ping local health endpoint
+      const controller = AbortSignal.timeout(3000);
+      const res = await fetch(`${this.baseUrl}/health`, { signal: controller });
+      return res.ok;
     } catch (error) {
       return false;
     }
@@ -253,7 +261,7 @@ export class HardwareAPI {
       // Fallback to HTTP API
       try {
         const response = await fetch(`${this.baseUrl}/api/weight`, {
-          signal: AbortSignal.timeout(2000) // 2 second timeout
+          signal: AbortSignal.timeout(5000) // 5 second timeout
         });
         const data = await response.json();
         return data.weight;
@@ -308,12 +316,20 @@ export class HardwareAPI {
     this.weightCallback = callback;
   }
 
+  // Expose WS/base URL and liveness for consumers
+  getBaseUrl() { return this.baseUrl; }
+  isWsConnected() { return this.wsConnected; }
+  hasLiveFeed(thresholdMs = 3000) { return !!this.ws && Date.now() - this.wsLastMessageAt < thresholdMs; }
+  onWsStatusChange(cb: (connected: boolean, info?: { code?: number; reason?: string; clean?: boolean }) => void) { this.wsStatusCallback = cb; }
+
   // WebSocket schließen
   disconnect() {
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
+    this.wsConnected = false;
+    this.wsStatusCallback?.(false);
     if (this.i2cBus) {
       try {
         this.i2cBus.closeSync();

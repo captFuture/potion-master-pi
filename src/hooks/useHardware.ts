@@ -45,6 +45,8 @@ export function useHardware() {
 
     const updateWeight = async () => {
       try {
+        // Skip HTTP polling if WebSocket feed is fresh to avoid fetch timeouts
+        if (hardwareAPI.hasLiveFeed(3000)) return;
         const weight = await hardwareAPI.getWeight();
         setStatus(prev => ({ ...prev, currentWeight: weight }));
       } catch (error) {
